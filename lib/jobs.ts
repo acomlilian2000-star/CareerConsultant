@@ -211,12 +211,18 @@ export function findRelevantJobs(
     return [...jobs].sort(newestFirst);
   }
 
-  const rankedJobs = jobs
+  return jobs
     .map((job) => {
       const title = job.title.toLocaleLowerCase();
       const tags = job.tags.join(" ").toLocaleLowerCase();
       const category = job.category.toLocaleLowerCase();
       const description = job.description.toLocaleLowerCase();
+      const directMatch = terms.some(
+        (term) =>
+          title.includes(term) ||
+          tags.includes(term) ||
+          category.includes(term),
+      );
       const score = terms.reduce(
         (total, term) =>
           total +
@@ -226,14 +232,11 @@ export function findRelevantJobs(
           (description.includes(term) ? 1 : 0),
         0,
       );
-      return { job, score };
+      return { job, score, directMatch };
     })
-    .filter(({ score }) => score > 0)
+    .filter(({ directMatch }) => directMatch)
     .sort((a, b) => newestFirst(a.job, b.job) || b.score - a.score)
     .map(({ job }) => job);
-  return rankedJobs.length
-    ? rankedJobs
-    : [...jobs].sort(newestFirst);
 }
 
 export async function getJobById(id: string): Promise<RemoteJob | undefined> {
