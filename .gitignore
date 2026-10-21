@@ -4,5 +4,5 @@ out/
 coverage/
 .env
 .env.*
-!.env.example
+package.json
 npm-debug.log*

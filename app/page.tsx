@@ -58,16 +58,29 @@ type Message = {
   content: string;
   sources?: Citation[];
   tools?: ToolResult[];
-  retrieval?: { mode: string; warning?: string };
+  retrieval?: {
+    mode: string;
+    warning?: string;
+    plan?: { translatedQuery: string; topic?: string; location?: string };
+  };
   security?: { injectionPatternDetected: boolean };
   usage?: { inputTokens: number; outputTokens: number; estimatedCostUsd: number };
   demoMode?: boolean;
 };
+type ChatResponse = {
+  answer: string;
+  sources?: Citation[];
+  tools?: ToolResult[];
+  retrieval?: Message["retrieval"];
+  security?: Message["security"];
+  usage?: Message["usage"];
+  demoMode?: boolean;
+  error?: string;
+};
 
 const models = [
-  { id: "openai/gpt-4o-mini", label: "GPT-4o mini" },
-  { id: "anthropic/claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
-  { id: "google/gemini-2.0-flash-001", label: "Gemini 2.0 Flash" },
+  { id: "gpt-4o-mini", label: "GPT-4o mini" },
+  { id: "gpt-4.1-mini", label: "GPT-4.1 mini" },
 ];
 const sampleQuestions = [
   "Build me a 12-week frontend roadmap",
@@ -149,9 +162,12 @@ export default function Home() {
           history: messages.slice(-8).map(({ role, content }) => ({ role, content })),
         }),
       });
-      const result = (await response.json()) as Message & { error?: string };
-      if (!response.ok) throw new Error(result.error || "The advisor could not respond.");
-      setMessages((current) => [...current, { role: "assistant", ...result }]);
+      const { answer, error, ...assistantMetadata } = (await response.json()) as ChatResponse;
+      if (!response.ok) throw new Error(error || "The advisor could not respond.");
+      setMessages((current) => [
+        ...current,
+        { role: "assistant", content: answer, ...assistantMetadata },
+      ]);
     } catch (error) {
       setMessages((current) => [
         ...current,
@@ -321,8 +337,9 @@ export default function Home() {
                         {message.role === "assistant" && <div className="assistant-avatar tiny"><Sparkles size={13} /></div>}
                         <div className="message-body">
                           <div className="message-bubble">{message.content}</div>
-                          {message.role === "assistant" && message.demoMode && <div className="demo-note"><CircleHelp size={12} /> Demo mode · add an OpenRouter key for personalized AI responses.</div>}
-                          {message.role === "assistant" && message.retrieval && <div className="retrieval-chip"><Filter size={11} /> {message.retrieval.mode} retrieval{message.retrieval.warning ? " · embeddings unavailable" : ""}</div>}
+                          {message.role === "assistant" && message.demoMode && <div className="demo-note"><CircleHelp size={12} /> Demo mode · add an OpenAI key for personalized AI responses.</div>}
+                          {message.role === "assistant" && message.retrieval && <div className="retrieval-chip"><Filter size={11} /> {message.retrieval.mode} retrieval{message.retrieval.plan?.topic ? ` · ${message.retrieval.plan.topic}` : ""}{message.retrieval.plan?.location ? ` · ${message.retrieval.plan.location}` : ""}{message.retrieval.warning ? " · embeddings unavailable" : ""}</div>}
+                          {message.role === "assistant" && message.retrieval?.plan?.topic && <div className="retrieval-chip">Translated search: {message.retrieval.plan.translatedQuery}</div>}
                           {message.role === "assistant" && message.usage && <div className="retrieval-chip"><TrendingUp size={11} /> {message.usage.inputTokens + message.usage.outputTokens} tokens · estimated ${message.usage.estimatedCostUsd.toFixed(5)}</div>}
                           {message.role === "assistant" && message.security?.injectionPatternDetected && <div className="demo-note"><ShieldCheck size={12} /> An instruction-like pattern was safely ignored.</div>}
                           {message.role === "assistant" && message.sources?.length ? <div className="source-list"><b><FileText size={12} /> SOURCES</b>{message.sources.slice(0, 3).map((source, sourceIndex) => <a href={source.url} target="_blank" rel="noreferrer" key={`${source.id}-${sourceIndex}`}>[{sourceIndex + 1}] {source.title}<ExternalLink size={11} /></a>)}</div> : null}

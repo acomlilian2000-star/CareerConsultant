@@ -10,8 +10,7 @@ export type ToolResult = {
 
 const citySchema = z.enum(["New York", "London", "Nairobi"]);
 
-export const careerTools = [
-  new DynamicStructuredTool({
+const salaryPathTool = new DynamicStructuredTool({
     name: "salary_path",
     description:
       "Estimate a junior developer salary band, monthly take-home after a simple 20% planning deduction, and income growth over a selected career horizon for a city.",
@@ -34,8 +33,8 @@ export const careerTools = [
           "Illustrative planning estimate only; 20% deduction and 8% annual growth are simplified assumptions, not tax or wage advice.",
       });
     },
-  }),
-  new DynamicStructuredTool({
+  });
+const housingAffordabilityTool = new DynamicStructuredTool({
     name: "housing_affordability",
     description:
       "Compare the city's illustrative monthly rent with estimated entry-level monthly take-home pay and calculate a rent-to-net-income ratio.",
@@ -55,8 +54,8 @@ export const careerTools = [
           "Illustrative defaults, not live housing data. A ratio above 30% is a commonly used budgeting flag, not a universal rule.",
       });
     },
-  }),
-  new DynamicStructuredTool({
+  });
+const learningRoadmapTool = new DynamicStructuredTool({
     name: "learning_roadmap",
     description:
       "Create a practical, staged 12-week learning roadmap for frontend, backend, or full-stack software developer goals.",
@@ -94,8 +93,26 @@ export const careerTools = [
           "Build one accessible, tested, deployed project that solves a real problem and includes a clear README.",
       });
     },
-  }),
+  });
+
+export const careerTools = [
+  salaryPathTool,
+  housingAffordabilityTool,
+  learningRoadmapTool,
 ];
+
+export async function invokeCareerTool(name: string, args: unknown) {
+  switch (name) {
+    case "salary_path":
+      return salaryPathTool.invoke(salaryPathTool.schema.parse(args));
+    case "housing_affordability":
+      return housingAffordabilityTool.invoke(housingAffordabilityTool.schema.parse(args));
+    case "learning_roadmap":
+      return learningRoadmapTool.invoke(learningRoadmapTool.schema.parse(args));
+    default:
+      throw new Error(`Unknown career tool: ${name}`);
+  }
+}
 
 export const toolLabels: Record<string, string> = {
   salary_path: "Salary growth estimate",

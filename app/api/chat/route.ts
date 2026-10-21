@@ -3,7 +3,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 import { retrieveKnowledge } from "@/lib/rag";
 import { careerSystemPrompt, inspectUserMessage } from "@/lib/security";
-import { asToolResult, careerTools, type ToolResult } from "@/lib/tools";
+import { asToolResult, careerTools, invokeCareerTool, type ToolResult } from "@/lib/tools";
 
 export const runtime = "nodejs";
 
@@ -15,13 +15,9 @@ const RequestSchema = z.object({
     .optional()
     .default([]),
   model: z
-    .enum([
-      "anthropic/claude-3.5-sonnet",
-      "openai/gpt-4o-mini",
-      "google/gemini-2.0-flash-001",
-    ])
+    .enum(["gpt-4o-mini", "gpt-4.1-mini"])
     .optional()
-    .default("openai/gpt-4o-mini"),
+    .default("gpt-4o-mini"),
 });
 
 const requestTimes = new Map<string, number[]>();
@@ -43,12 +39,12 @@ function fallbackAnswer(
 ): string {
   const context = sources.map((source, i) => `[S${i + 1}] ${source.content}`).join("\n\n");
   if (/salary|pay|income|earn/i.test(message)) {
-    return `I found relevant planning information, but a configured OpenRouter API key is needed for a personalized answer. The example salary figures in this demo are illustrative only and should be checked against current local job listings.\n\n${context}`;
+    return `I found relevant planning information, but a configured OpenAI API key is needed for a personalized answer. The example salary figures in this demo are illustrative only and should be checked against current local job listings.\n\n${context}`;
   }
   if (/roadmap|learn|study|skill|where.*start/i.test(message)) {
-    return `A useful starting point is to pick one target track and build a small, deployed project instead of trying to learn every framework at once. The sources below describe practical skill areas; configure an OpenRouter API key for personalized follow-up questions.\n\n${context}`;
+    return `A useful starting point is to pick one target track and build a small, deployed project instead of trying to learn every framework at once. The sources below describe practical skill areas; configure an OpenAI API key for personalized follow-up questions.\n\n${context}`;
   }
-  return `I can retrieve relevant career guidance, but personalized chat needs an OpenRouter API key in your server environment. Here is the closest information I found:\n\n${context}`;
+  return `I can retrieve relevant career guidance, but personalized chat needs an OpenAI API key in your server environment. Here is the closest information I found:\n\n${context}`;
 }
 
 export async function POST(request: Request) {
@@ -89,7 +85,7 @@ export async function POST(request: Request) {
     const toolResults: ToolResult[] = [];
     let answer: string;
     let usage = { inputTokens: 0, outputTokens: 0, estimatedCostUsd: 0 };
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     let modelUsed = body.model;
 
     if (!apiKey) {
@@ -99,10 +95,6 @@ export async function POST(request: Request) {
         apiKey,
         model: body.model,
         temperature: 0.25,
-        configuration: {
-          baseURL: process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1",
-          defaultHeaders: { "HTTP-Referer": "http://localhost:3000", "X-Title": "MarketPulse" },
-        },
       }).bindTools(careerTools);
       const history = body.history
         .slice(-8)
@@ -121,10 +113,8 @@ export async function POST(request: Request) {
       if (toolCalls.length) {
         const results: ToolMessage[] = [];
         for (const call of toolCalls.slice(0, 3)) {
-          const tool = careerTools.find((candidate) => candidate.name === call.name);
-          if (!tool) continue;
           try {
-            const result = await tool.invoke(call.args);
+            const result = await invokeCareerTool(call.name, call.args);
             toolResults.push(asToolResult(call.name, String(result)));
             results.push(new ToolMessage({ tool_call_id: call.id ?? "", content: String(result) }));
           } catch (error) {
@@ -151,9 +141,8 @@ export async function POST(request: Request) {
       const responseUsage = response.usage_metadata;
       if (responseUsage) {
         const perMillionRates: Record<string, { input: number; output: number }> = {
-          "openai/gpt-4o-mini": { input: 0.15, output: 0.6 },
-          "anthropic/claude-3.5-sonnet": { input: 3, output: 15 },
-          "google/gemini-2.0-flash-001": { input: 0.1, output: 0.4 },
+          "gpt-4o-mini": { input: 0.15, output: 0.6 },
+          "gpt-4.1-mini": { input: 0.4, output: 1.6 },
         };
         const rates = perMillionRates[body.model];
         usage = {
@@ -179,7 +168,11 @@ export async function POST(request: Request) {
         keywordScore,
         vectorScore,
       })),
-      retrieval: { mode: retrieval.mode, warning: retrieval.warning },
+      retrieval: {
+        mode: retrieval.mode,
+        warning: retrieval.warning,
+        plan: retrieval.plan,
+      },
       tools: toolResults,
       security: { injectionPatternDetected: inspected.injectionLike },
       model: modelUsed,

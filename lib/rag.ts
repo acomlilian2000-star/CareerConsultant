@@ -1,8 +1,15 @@
 import { Document } from "@langchain/core/documents";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { knowledgeBase } from "@/lib/knowledge";
+import { cities, knowledgeBase, type City } from "@/lib/knowledge";
 
+export type RetrievalTopic = "skills" | "salary" | "jobs" | "learning" | "portfolio";
+export type RetrievalPlan = {
+  originalQuery: string;
+  translatedQuery: string;
+  topic?: RetrievalTopic;
+  location?: string;
+};
 export type RetrievedChunk = {
   id: string;
   title: string;
@@ -19,18 +26,48 @@ let chunksPromise: Promise<Document[]> | undefined;
 let vectorsPromise: Promise<number[][]> | undefined;
 let embeddings: OpenAIEmbeddings | undefined;
 
+const topicTranslations: Record<RetrievalTopic, string> = {
+  skills: "technology workforce emerging skills AI data cybersecurity analytical thinking employer demand",
+  salary: "software developer compensation salary wage gross annual take-home monthly rent housing affordability living costs",
+  jobs: "remote software developer job roles openings vacancies listings employers hiring",
+  learning: "junior developer learning curriculum roadmap frontend backend full-stack TypeScript React APIs testing projects",
+  portfolio: "junior software developer portfolio projects live demo tests README hiring evidence",
+};
+
+export function translateCareerQuery(query: string): RetrievalPlan {
+  const normalized = query.toLowerCase();
+  const topic: RetrievalTopic | undefined =
+    /\b(salary|pay|income|earnings?|rent|housing|affordability|cost of living)\b/.test(normalized)
+      ? "salary"
+      : /\b(jobs?|roles?|vacanc(?:y|ies)|listings?|hiring|employers?|market)\b/.test(normalized)
+        ? "jobs"
+        : /\b(portfolio|showcase|resume|résumé|cv)\b/.test(normalized)
+          ? "portfolio"
+          : /\b(learn|learning|study|roadmap|curriculum|frontend|backend|full.stack)\b/.test(normalized)
+            ? "learning"
+            : /\b(skill|skills|trend|demand|emerging|future)\b/.test(normalized)
+              ? "skills"
+              : undefined;
+  const location = (Object.keys(cities) as City[]).find((city) =>
+    normalized.includes(city.toLowerCase()),
+  );
+
+  return {
+    originalQuery: query,
+    translatedQuery: topic
+      ? `${topicTranslations[topic]}${location ? ` ${location}` : ""}`
+      : query,
+    topic,
+    location,
+  };
+}
+
 function getEmbeddings() {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return undefined;
   embeddings ??= new OpenAIEmbeddings({
     apiKey,
-    model: process.env.OPENROUTER_EMBEDDING_MODEL ?? "openai/text-embedding-3-small",
-    configuration: {
-      baseURL:
-        process.env.EMBEDDING_BASE_URL ||
-        process.env.OPENROUTER_BASE_URL ||
-        "https://openrouter.ai/api/v1",
-    },
+    model: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-small",
   });
   return embeddings;
 }
@@ -88,16 +125,24 @@ function cosineSimilarity(a: number[], b: number[]) {
 export async function retrieveKnowledge(
   query: string,
   limit = 4,
-): Promise<{ results: RetrievedChunk[]; mode: "hybrid" | "keyword"; warning?: string }> {
+): Promise<{
+  results: RetrievedChunk[];
+  mode: "hybrid" | "keyword";
+  warning?: string;
+  plan: RetrievalPlan;
+}> {
   const documents = await getChunks();
-  let queryVector: number[] | undefined;
+  const plan = translateCareerQuery(query);
+  let queryVectors: number[][] | undefined;
   let vectors: number[][] | undefined;
   let warning: string | undefined;
   const embedder = getEmbeddings();
 
   if (embedder) {
     try {
-      queryVector = await embedder.embedQuery(query);
+      queryVectors = await embedder.embedDocuments(
+        [...new Set([query, plan.translatedQuery])],
+      );
       vectorsPromise ??= embedder.embedDocuments(
         documents.map((document) => document.pageContent),
       );
@@ -112,22 +157,39 @@ export async function retrieveKnowledge(
 
   const ranked = documents
     .map((document, index) => {
-      const keywordScore = keywordSimilarity(
-        query,
-        `${document.pageContent} ${document.metadata.title} ${document.metadata.publisher}`,
+      const searchableText = `${document.pageContent} ${document.metadata.title} ${document.metadata.publisher}`;
+      const keywordScore = Math.max(
+        keywordSimilarity(query, searchableText),
+        keywordSimilarity(plan.translatedQuery, searchableText),
       );
-      const vectorScore =
-        queryVector && vectors ? (cosineSimilarity(queryVector, vectors[index]) + 1) / 2 : undefined;
-      const score =
+      const vectorScore = queryVectors && vectors
+        ? queryVectors.reduce(
+            (total, queryVector) => total + (cosineSimilarity(queryVector, vectors[index]) + 1) / 2,
+            0,
+          ) / queryVectors.length
+        : undefined;
+      const topicMatch =
+        plan.topic && (document.metadata.topics as RetrievalTopic[]).includes(plan.topic);
+      const locationMatch =
+        plan.location &&
+        (document.metadata.locations as string[]).some(
+          (location) => location.toLowerCase() === plan.location?.toLowerCase(),
+        );
+      const baseScore =
         vectorScore === undefined ? keywordScore : 0.62 * vectorScore + 0.38 * keywordScore;
+      const score = Math.min(
+        1,
+        baseScore + (topicMatch ? 0.08 : 0) + (locationMatch ? 0.08 : 0),
+      );
       return { document, score, keywordScore, vectorScore };
     })
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 
   return {
-    mode: queryVector && vectors ? "hybrid" : "keyword",
+    mode: queryVectors && vectors ? "hybrid" : "keyword",
     warning,
+    plan,
     results: ranked.map(({ document, score, keywordScore, vectorScore }) => ({
       id: document.metadata.sourceId as string,
       title: document.metadata.title as string,
