@@ -40,6 +40,7 @@ type Job = {
   jobType: string;
   tags: string[];
   description: string;
+  source: string;
 };
 type Citation = {
   id: string;
@@ -112,7 +113,6 @@ export default function Home() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [notice, setNotice] = useState("");
   const chatEnd = useRef<HTMLDivElement>(null);
-  const marketSection = useRef<HTMLElement>(null);
 
   useEffect(() => {
     chatEnd.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -288,8 +288,20 @@ export default function Home() {
   const visibleJobs = categoryFilter
     ? jobs.filter((job) => job.category === categoryFilter)
     : jobs;
+  const navigateTo = (sectionId: string, label: string) => {
+    setActiveNav(label);
+    setMobileMenu(false);
+    if (sectionId === "top") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
   const openMarketFeed = () => {
-    marketSection.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    navigateTo("market-pulse", "Market explorer");
   };
   const selectJob = (job: Job | null) => {
     setSelectedJob(job);
@@ -302,18 +314,18 @@ export default function Home() {
   return (
     <main className="app-shell">
       <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
-        <a className="brand" href="#" aria-label="MarketPulse home">
+        <a className="brand" href="#overview" aria-label="MarketPulse home" onClick={() => navigateTo("top", "Overview")}>
           <span className="brand-mark"><TrendingUp size={19} strokeWidth={2.5} /></span>
           <span>market<span>pulse</span></span>
         </a>
         <div className="workspace-label">WORKSPACE</div>
-        <button className={`nav-item ${activeNav === "Overview" ? "selected" : ""}`} onClick={() => setActiveNav("Overview")}><span className="nav-icon"><Command size={16} /></span> Overview</button>
-        <button className={`nav-item ${activeNav === "Career paths" ? "selected" : ""}`} onClick={() => setActiveNav("Career paths")}><span className="nav-icon"><Code2 size={16} /></span> Career paths</button>
-        <button className={`nav-item ${activeNav === "Market explorer" ? "selected" : ""}`} onClick={() => { setActiveNav("Market explorer"); openMarketFeed(); }}><span className="nav-icon"><Globe2 size={16} /></span> Market explorer</button>
-        <button className={`nav-item ${activeNav === "Learning plan" ? "selected" : ""}`} onClick={() => { setActiveNav("Learning plan"); sendMessage(undefined, "Create a 12-week learning roadmap for me."); }}><span className="nav-icon"><GraduationCap size={16} /></span> Learning plan</button>
+        <button className={`nav-item ${activeNav === "Overview" ? "selected" : ""}`} onClick={() => navigateTo("top", "Overview")}><span className="nav-icon"><Command size={16} /></span> Overview</button>
+        <button className={`nav-item ${activeNav === "Career paths" ? "selected" : ""}`} onClick={() => navigateTo("career-paths", "Career paths")}><span className="nav-icon"><Code2 size={16} /></span> Career paths</button>
+        <button className={`nav-item ${activeNav === "Market explorer" ? "selected" : ""}`} onClick={openMarketFeed}><span className="nav-icon"><Globe2 size={16} /></span> Market explorer</button>
+        <button className={`nav-item ${activeNav === "Learning plan" ? "selected" : ""}`} onClick={() => { navigateTo("advisor", "Learning plan"); sendMessage(undefined, "Create a 12-week learning roadmap for me."); }}><span className="nav-icon"><GraduationCap size={16} /></span> Learning plan</button>
         <div className="sidebar-divider" />
         <div className="workspace-label">YOUR ACTIVITY</div>
-        <button className="nav-item" onClick={() => setShowHistory(true)}><span className="nav-icon"><MessageCircle size={16} /></span> Conversations <span className="nav-count">{totalMessages}</span></button>
+        <button className="nav-item" onClick={() => { setShowHistory(true); setMobileMenu(false); }}><span className="nav-icon"><MessageCircle size={16} /></span> Conversations <span className="nav-count">{totalMessages}</span></button>
         <button className="nav-item" onClick={() => void refreshKnowledge()}><span className="nav-icon"><RefreshCw size={15} /></span> Update knowledge</button>
 
         <div className="sidebar-bottom">
@@ -321,7 +333,7 @@ export default function Home() {
             <div className="promo-icon"><Sparkles size={16} /></div>
             <strong>Your next move,<br />made clearer.</strong>
             <span>Grounded in skills data and real job signals.</span>
-            <button onClick={() => sendMessage(undefined, "How should I start planning my tech career?")}>Meet your advisor <ArrowRight size={13} /></button>
+            <button onClick={() => { navigateTo("advisor", "Overview"); sendMessage(undefined, "How should I start planning my tech career?"); }}>Meet your advisor <ArrowRight size={13} /></button>
           </div>
         </div>
       </aside>
@@ -332,11 +344,11 @@ export default function Home() {
           <div className="breadcrumb">Workspace <span>/</span> <b>{activeNav}</b></div>
           <div className="top-actions">
             <span className={`live-pill ${marketError ? "offline" : ""}`}><span />{jobsLoading ? "Loading job snapshot" : marketError ? "Job snapshot unavailable" : fetchedAt ? `${snapshotSize} source snapshot listings` : "Job snapshot not loaded"}</span>
-            <button className="help-button" aria-label="Help" title="Ask the career advisor"><CircleHelp size={18} /></button>
+            <button className="help-button" aria-label="Help" title="Ask the career advisor" onClick={() => navigateTo("advisor", "Overview")}><CircleHelp size={18} /></button>
           </div>
         </header>
 
-        <div className="content">
+        <div className="content" id="overview">
           <div className="welcome-row">
             <div>
               <div className="eyebrow"><span className="eyebrow-line" /> YOUR CAREER, IN CONTEXT</div>
@@ -347,10 +359,10 @@ export default function Home() {
           </div>
 
           <div className="stats-grid">
-            <button className="stat-card stat-card-action" type="button" onClick={openMarketFeed} aria-label="View live remote job listings">
+            <button className="stat-card stat-card-action" type="button" onClick={openMarketFeed} aria-label="View matching job listings">
               <div className="stat-top"><span>LIVE REMOTE LISTINGS</span><span className="stat-icon green"><BriefcaseBusiness size={16} /></span></div>
               <div className="stat-main">{jobsLoading ? "…" : fetchedAt ? totalJobCount : "—"}</div>
-              <div className="stat-foot">{fetchedAt ? `${totalJobCount} matches in source snapshot · showing ${jobs.length}` : marketError ? "Source snapshot unavailable · click to retry" : "Waiting for current search results"}</div>
+              <div className="stat-foot">{fetchedAt ? `${totalJobCount} roles matching “${marketSearch || "latest jobs"}”` : marketError ? "Source snapshot unavailable · click to retry" : "Waiting for current search results"}</div>
             </button>
             <button
               className={`stat-card stat-card-action ${categoryFilter === topCategory && topCategory ? "active" : ""}`}
@@ -365,14 +377,14 @@ export default function Home() {
             >
               <div className="stat-top"><span>MOST COMMON CATEGORY</span><span className="stat-icon lavender"><Code2 size={16} /></span></div>
               <div className="stat-main stat-text">{jobsLoading ? "…" : fetchedAt ? topCategory ?? "No category reported" : "—"}</div>
-              <div className="stat-foot">{topCategory ? `${topCategoryCount} matching listings · click to filter` : "Calculated from categories in the live results"}</div>
+              <div className="stat-foot">{topCategory ? `${topCategoryCount} matches for “${marketSearch || "latest jobs"}” · click to view` : "Category will appear when the source reports one"}</div>
             </button>
             {latestJob ? (
-              <a className="stat-card stat-card-action" href={latestJob.url} target="_blank" rel="noreferrer">
+              <button className="stat-card stat-card-action" type="button" onClick={() => { setCategoryFilter(""); selectJob(latestJob); openMarketFeed(); }}>
                 <div className="stat-top"><span>LATEST POSTING DATE</span><span className="stat-icon peach"><Clock3 size={16} /></span></div>
                 <div className="stat-main stat-text">{latestJobDate?.toLocaleDateString()}</div>
-                <div className="stat-foot">{latestJob.title} · open listing</div>
-              </a>
+                <div className="stat-foot">{latestJob.title} · click to view details</div>
+              </button>
             ) : (
               <article className="stat-card">
                 <div className="stat-top"><span>LATEST POSTING DATE</span><span className="stat-icon peach"><Clock3 size={16} /></span></div>
@@ -382,25 +394,25 @@ export default function Home() {
             )}
           </div>
 
-          <section className="path-section">
+          <section className="path-section" id="career-paths">
             <div className="section-heading">
               <div><div className="eyebrow small"><span className="eyebrow-line" /> CURATED LEARNING STARTERS</div><h2>Paths built for what’s next</h2></div>
-              <button className="text-link" onClick={() => { setActiveNav("Career paths"); sendMessage(undefined, "Compare frontend, backend, and full-stack paths for an early-career developer."); }}>Explore all paths <ArrowRight size={15} /></button>
+              <button className="text-link" onClick={() => { navigateTo("advisor", "Career paths"); sendMessage(undefined, "Compare frontend, backend, and full-stack paths for an early-career developer."); }}>Explore all paths <ArrowRight size={15} /></button>
             </div>
             <div className="path-grid">
-              <PathCard initials="UI" color="mint" title="Frontend developer" description="Plan a frontend learning track with the advisor." skills={["React", "TypeScript", "CSS"]} onClick={() => sendMessage(undefined, "Build me a 12-week frontend developer roadmap.")} />
-              <PathCard initials="</>" color="blue" title="Backend developer" description="Plan a backend learning track with the advisor." skills={["Node.js", "APIs", "SQL"]} onClick={() => sendMessage(undefined, "Build me a 12-week backend developer roadmap.")} />
-              <PathCard initials="✳" color="lav" title="Full-stack developer" description="Plan an end-to-end learning track with the advisor." skills={["React", "Node.js", "Postgres"]} onClick={() => sendMessage(undefined, "Build me a 12-week full-stack developer roadmap.")} />
+              <PathCard initials="UI" color="mint" title="Frontend developer" description="Plan a frontend learning track with the advisor." skills={["React", "TypeScript", "CSS"]} onClick={() => { navigateTo("advisor", "Career paths"); sendMessage(undefined, "Build me a 12-week frontend developer roadmap."); }} />
+              <PathCard initials="</>" color="blue" title="Backend developer" description="Plan a backend learning track with the advisor." skills={["Node.js", "APIs", "SQL"]} onClick={() => { navigateTo("advisor", "Career paths"); sendMessage(undefined, "Build me a 12-week backend developer roadmap."); }} />
+              <PathCard initials="✳" color="lav" title="Full-stack developer" description="Plan an end-to-end learning track with the advisor." skills={["React", "Node.js", "Postgres"]} onClick={() => { navigateTo("advisor", "Career paths"); sendMessage(undefined, "Build me a 12-week full-stack developer roadmap."); }} />
             </div>
           </section>
 
           <div className="lower-grid">
-            <section className="market-card" id="market-pulse" ref={marketSection}>
+            <section className="market-card" id="market-pulse">
               <div className="market-header">
                 <div><div className="eyebrow small"><span className="eyebrow-line" /> LIVE MARKET PULSE</div><h2>Fresh roles, real signals</h2></div>
                 <button className="icon-action" aria-label="Reload cached job snapshot" onClick={() => void refreshJobs(marketSearch)} disabled={jobsLoading}>{jobsLoading ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={15} />}</button>
               </div>
-              <p className="market-desc">Search a once-daily Remotive snapshot (up to 10 roles). Results rank against your terms; eligibility is not the employer&apos;s location. Listings may be delayed up to 24 hours.</p>
+              <p className="market-desc">Search real remote listings by role. Results are filtered using the role tag and ranked against your search. Eligibility is not the employer&apos;s location.</p>
               <form className="market-search" onSubmit={(event) => { event.preventDefault(); void refreshJobs(marketSearch); }}>
                 <input aria-label="Search remote job snapshot" placeholder="e.g. React developer, data analyst, Python" value={marketSearch} onChange={(event) => setMarketSearch(event.target.value)} maxLength={80} />
                 <button type="submit" disabled={jobsLoading}>{jobsLoading ? "Searching…" : "Search roles"}</button>
@@ -448,7 +460,7 @@ export default function Home() {
                   {tailorFeedback && <div className="tailor-feedback"><h4>Feedback for {selectedJob.company}</h4><div>{tailorFeedback}</div></div>}
                 </form>
               </section>}
-              <div className="market-footer"><span>{fetchedAt ? `Remotive snapshot · ${new Date(fetchedAt).toLocaleString()}` : "Source: Remotive public jobs API"}</span><span>{fetchedAt ? `Up to ${snapshotSize} roles` : "Loading source snapshot"}</span></div>
+              <div className="market-footer"><span>{fetchedAt ? <>Source: <a href="https://jobicy.com/" target="_blank" rel="noreferrer">Jobicy</a> · checked {new Date(fetchedAt).toLocaleString()}</> : <>Source: <a href="https://jobicy.com/" target="_blank" rel="noreferrer">Jobicy remote jobs API</a></>}</span><span>{fetchedAt ? `${jobs.length} of ${totalJobCount} matches` : "Loading job listings"}</span></div>
             </section>
 
             <section className="advisor-card" id="advisor">
@@ -489,7 +501,7 @@ export default function Home() {
             </section>
           </div>
 
-          <div className="disclaimer"><ShieldCheck size={13} /> Salary and housing benchmarks are not displayed because no verified live regional data source is connected. Job listings are sourced from Remotive and may change; confirm details with the original posting.</div>
+          <div className="disclaimer"><ShieldCheck size={13} /> Salary and housing benchmarks are not displayed because no verified live regional data source is connected. Job listings are sourced from Jobicy and may change; confirm details with the original posting.</div>
           <footer><span>© {new Date().getFullYear()} MarketPulse</span><span><a href="https://www.weforum.org/publications/the-future-of-jobs-report-2025/" target="_blank" rel="noreferrer">Data sources</a><span className="footer-dot">·</span><button onClick={() => void refreshKnowledge()}>Knowledge base</button><span className="footer-dot">·</span><button onClick={() => setShowHistory(true)}>Conversation history</button></span></footer>
         </div>
       </section>

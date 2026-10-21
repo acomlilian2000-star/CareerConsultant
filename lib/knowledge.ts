@@ -33,15 +33,15 @@ export const knowledgeBase: KnowledgeSource[] = [
       "The U.S. Bureau of Labor Statistics publishes employment outlook and wage information for software developers, quality assurance analysts, and testers. Its figures describe the United States and broad occupational groups; they are not a substitute for city-specific junior job listings. Compare the latest BLS figures with current local postings, required experience, and local living costs before making a career or relocation decision.",
   },
   {
-    id: "remotive",
+    id: "jobicy",
     title: "Remote software job listings",
-    publisher: "Remotive public jobs API",
-    url: "https://remotive.com/remote-jobs",
-    updated: "Cached for up to 24 hours",
+    publisher: "Jobicy public remote jobs API",
+    url: "https://jobicy.com/",
+    updated: "Live API; cached by search tag for up to 24 hours",
     topics: ["jobs"],
     locations: ["remote"],
     text:
-      "MarketPulse loads up to 10 public remote job listings from Remotive into a server-side snapshot cached for up to 24 hours; searches rank that snapshot locally. Listings are remote-first and are not a representative sample of a particular city's entire job market. Candidate eligibility is not necessarily the employer's location. Remotive says listings may be delayed by up to 24 hours, and its feed does not provide applicant counts or formal employment terms. Job titles, descriptions, and salary information may be incomplete or change after retrieval. Always check the original listing before applying.",
+      "MarketPulse queries Jobicy's public remote jobs API by role tag and ranks up to 50 returned listings; each role-tag result is cached server-side for up to 24 hours. Listings are remote-first and are not a representative sample of a particular city's entire job market. The API's job geography is candidate eligibility, not necessarily the employer's headquarters. Applicant counts and formal employment terms are not provided. Job titles, descriptions, and salary information may be incomplete or change after retrieval. Always check the original listing before applying.",
   },
   {
     id: "roadmap",

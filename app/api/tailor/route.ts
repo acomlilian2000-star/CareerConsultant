@@ -2,7 +2,7 @@ import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { getJobById } from "@/lib/remotive";
+import { getJobById } from "@/lib/jobs";
 
 export const runtime = "nodejs";
 

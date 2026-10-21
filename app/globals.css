@@ -33,15 +33,16 @@ button { cursor: pointer; }
 .nav-icon { display: grid; width: 17px; place-items: center; }
 .nav-count { margin-left: auto; padding: 2px 6px; border-radius: 5px; background: #f0f2ef; color: #858c84; font-size: 10px; }
 .sidebar-divider { height: 1px; margin: 18px 5px 21px; background: var(--line); }
-.sidebar-bottom { margin-top: auto; }
+.sidebar-bottom { z-index: 1; margin-top: auto; padding-top: 12px; }
 .sidebar-promo { display: flex; flex-direction: column; align-items: flex-start; padding: 15px 13px 12px; border: 1px solid #e7eee7; border-radius: 9px; background: linear-gradient(145deg, #f8fbf7, #f1f6f0); }
 .promo-icon { display: grid; width: 27px; height: 27px; margin-bottom: 11px; place-items: center; border-radius: 8px; background: #e6f1e8; color: #39764f; }
 .sidebar-promo strong { font: 700 13px/1.45 var(--font-display); letter-spacing: -.3px; }
 .sidebar-promo > span { margin-top: 5px; color: #858e85; font-size: 10px; line-height: 1.55; }
-.sidebar-promo button { display: flex; align-items: center; gap: 5px; margin-top: 12px; padding: 0; border: 0; background: none; color: #39764f; font-size: 10px; font-weight: 600; }
+.sidebar-promo button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 7px; margin-top: 12px; padding: 3px 0; border: 0; background: none; color: #39764f; font-size: 10px; font-weight: 600; white-space: nowrap; }
 .profile-button { display: flex; width: 100%; align-items: center; gap: 9px; margin-top: 17px; padding: 12px 1px 0; border: 0; border-top: 1px solid var(--line); background: transparent; text-align: left; }
 
 .main-area { min-height: 100vh; margin-left: 238px; }
+.path-section, #market-pulse, #advisor { scroll-margin-top: 78px; }
 .topbar { position: sticky; z-index: 10; top: 0; display: flex; height: 61px; align-items: center; justify-content: space-between; padding: 0 44px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.93); backdrop-filter: blur(14px); }
 .breadcrumb { color: #9ba19a; font-size: 11px; }
 .breadcrumb span { margin: 0 9px; color: #c6cbc5; }

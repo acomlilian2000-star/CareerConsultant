@@ -1,19 +1,20 @@
-import { findRelevantJobs, getJobSnapshot } from "@/lib/remotive";
+import { findRelevantJobs, getJobSnapshot } from "@/lib/jobs";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const search = new URL(request.url).searchParams.get("search")?.trim().slice(0, 80) ?? "";
   try {
-    const snapshot = await getJobSnapshot();
+    const snapshot = await getJobSnapshot(search);
     const matchingJobs = findRelevantJobs(snapshot.jobs, search);
     return Response.json({
-      jobs: matchingJobs.slice(0, 20),
+      jobs: matchingJobs.slice(0, 30),
       totalJobCount: matchingJobs.length,
       snapshotSize: snapshot.jobs.length,
       fetchedAt: snapshot.fetchedAt,
-      source: "Remotive public remote jobs API",
-      searchMode: "relevance-ranked source snapshot",
+      sourceUpdatedAt: snapshot.sourceUpdatedAt,
+      source: "Jobicy remote jobs API",
+      searchMode: search ? "source tag filter and relevance ranking" : "latest source listings",
     });
   } catch (error) {
     console.error("MarketPulse market refresh failed:", error);
