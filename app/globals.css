@@ -40,11 +40,6 @@ button { cursor: pointer; }
 .sidebar-promo > span { margin-top: 5px; color: #858e85; font-size: 10px; line-height: 1.55; }
 .sidebar-promo button { display: flex; align-items: center; gap: 5px; margin-top: 12px; padding: 0; border: 0; background: none; color: #39764f; font-size: 10px; font-weight: 600; }
 .profile-button { display: flex; width: 100%; align-items: center; gap: 9px; margin-top: 17px; padding: 12px 1px 0; border: 0; border-top: 1px solid var(--line); background: transparent; text-align: left; }
-.avatar, .top-avatar { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #ecded0; color: #7d5646; font-size: 10px; font-weight: 700; }
-.profile-copy { display: flex; flex: 1; flex-direction: column; gap: 3px; }
-.profile-copy b { font-size: 11px; font-weight: 600; }
-.profile-copy small { color: #969c96; font-size: 10px; }
-.profile-button > svg { color: #929991; }
 
 .main-area { min-height: 100vh; margin-left: 238px; }
 .topbar { position: sticky; z-index: 10; top: 0; display: flex; height: 61px; align-items: center; justify-content: space-between; padding: 0 44px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.93); backdrop-filter: blur(14px); }
@@ -55,7 +50,6 @@ button { cursor: pointer; }
 .live-pill { display: flex; align-items: center; gap: 7px; color: #778178; font-size: 10px; }
 .live-pill > span, .online-status i { width: 6px; height: 6px; border-radius: 50%; background: #65ad7b; box-shadow: 0 0 0 3px #eaf4ec; }
 .help-button { display: grid; width: 29px; height: 29px; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: #fff; color: #7b847c; }
-.top-avatar { width: 28px; height: 28px; font-size: 9px; }
 .mobile-menu { display: none; border: 0; background: none; }
 .content { width: min(1210px, 100%); margin: 0 auto; padding: 37px 44px 19px; }
 .welcome-row { display: flex; align-items: flex-end; justify-content: space-between; }
@@ -74,16 +68,7 @@ h1 span { color: #739779; }
 .stat-icon.lavender { background: #f1effb; color: #8073ad; }
 .stat-icon.peach { background: #fcf1e9; color: #be8a5d; }
 .stat-main { display: flex; align-items: center; gap: 9px; margin-top: 9px; font: 700 21px var(--font-display); letter-spacing: -.7px; }
-.stat-growth { padding: 4px 6px; border-radius: 4px; background: #eef5ed; color: #57855c; font: 600 9px var(--font-body); letter-spacing: 0; }
-.stat-muted { color: #6e786f; font-size: 15px; font-weight: 500; }
 .stat-foot { margin-top: 4px; color: #a0a69f; font-size: 9px; }
-.mini-bars { position: absolute; right: 15px; bottom: 14px; display: flex; height: 27px; align-items: flex-end; gap: 4px; opacity: .82; }
-.mini-bars i { width: 5px; border-radius: 2px 2px 0 0; background: #a8c6a9; }
-.range-track { position: relative; height: 4px; margin-top: 15px; border-radius: 4px; background: #f0eff8; }
-.range-track i { position: absolute; left: 24%; width: 46%; height: 4px; border-radius: 4px; background: linear-gradient(90deg, #cec9e7, #8e80be); }
-.inline-chevron { margin-left: -4px; color: #919990; }
-.location-foot { display: flex; align-items: center; gap: 6px; margin-top: 14px; color: #889188; font-size: 9px; }
-.location-dot { width: 5px; height: 5px; border-radius: 50%; background: #72a57b; }
 
 .path-section { margin-top: 31px; }
 .section-heading, .market-header { display: flex; align-items: flex-end; justify-content: space-between; }
@@ -106,8 +91,6 @@ h2 { margin-top: 6px; font: 700 18px var(--font-display); letter-spacing: -.65px
 .path-meta > span { color: #989f98; font-size: 9px; }
 .path-meta b { color: #48554a; font-size: 10px; font-weight: 600; }
 .path-meta small { color: #9da49d; font-size: 8px; font-weight: 400; }
-.path-progress { height: 3px; margin-top: 9px; border-radius: 5px; background: #f0f2ee; }
-.path-progress span { display: block; height: 100%; border-radius: inherit; background: #91b797; }
 .path-card-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
 .path-card-bottom > span:first-child { display: flex; flex-wrap: wrap; gap: 4px; }
 .path-card-bottom i { padding: 3px 6px; border-radius: 4px; background: #f5f7f4; color: #7b857b; font-size: 8px; font-style: normal; }
@@ -144,14 +127,8 @@ h2 { margin-top: 6px; font: 700 18px var(--font-display); letter-spacing: -.65px
 .online-status i { width: 5px; height: 5px; box-shadow: none; }
 .more-button { width: 27px; height: 27px; margin-left: auto; border: 0; }
 .chat-content { display: flex; min-height: 175px; flex: 1; flex-direction: column; padding: 13px 13px 5px; }
-.welcome-message { display: grid; grid-template-columns: 25px 1fr; align-items: start; gap: 8px; }
 .assistant-avatar { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 50%; background: #eaf3ea; color: #628865; }
-.assistant-bubble { padding: 9px 10px; border: 1px solid #edf0eb; border-radius: 2px 8px 8px 8px; background: #f8f9f7; color: #626d62; font-size: 10px; line-height: 1.55; }
-.assistant-bubble b { color: #485449; font-weight: 600; }
-.assistant-bubble p { margin-top: 3px; }
-.suggestion-list { display: flex; grid-column: 2; flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 1px; }
-.suggestion-list button { display: flex; align-items: center; gap: 7px; padding: 5px 8px; border: 1px solid #e9eee8; border-radius: 5px; background: #fff; color: #758275; font-size: 8px; transition: background .15s, border .15s; }
-.suggestion-list button:hover { border-color: #cddfce; background: #f5f9f5; color: #466e4b; }
+.empty-chat { display: grid; min-height: 130px; place-items: center; padding: 20px; color: #7d877d; text-align: center; font-size: 13px; }
 .chat-form { display: flex; align-items: center; gap: 7px; margin: 0 12px; padding: 5px 5px 5px 10px; border: 1px solid #e8ece7; border-radius: 7px; }
 .chat-form:focus-within { border-color: #a8c5ab; box-shadow: 0 0 0 2px #eaf3eb; }
 .chat-form input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #465046; font-size: 9px; }
@@ -221,6 +198,13 @@ footer button { padding: 0; border: 0; background: transparent; color: #929a91; 
 .empty-history { padding: 28px; color: #9aa19a; text-align: center; font-size: 11px; }
 .mobile-scrim { display: none; }
 
+.market-search { display: flex; gap: 8px; margin-top: 12px; }
+.market-search input { min-width: 0; flex: 1; padding: 9px 11px; border: 1px solid #e5ebe4; border-radius: 6px; color: var(--ink); }
+.market-search button { flex: 0 0 auto; padding: 8px 11px; border: 0; border-radius: 6px; background: var(--green); color: white; font-weight: 600; }
+.market-search button:disabled { cursor: wait; opacity: .6; }
+.live-pill.offline > span { background: #bf6a54; box-shadow: 0 0 0 3px #faeee9; }
+.stat-text { overflow-wrap: anywhere; font-size: 18px; }
+
 @media (min-width: 1500px) {
   .content { padding-top: 44px; }
   .stats-grid { margin-top: 32px; }
@@ -263,7 +247,6 @@ footer button { padding: 0; border: 0; background: transparent; color: #929a91; 
   .stat-card:last-child { grid-column: span 2; min-height: 99px; }
   .stat-main { font-size: 18px; }
   .stat-top { font-size: 7px; }
-  .mini-bars { right: 11px; bottom: 10px; }
   .section-heading { align-items: flex-end; gap: 8px; }
   h2 { font-size: 16px; }
   .section-heading .text-link { flex: 0 0 auto; font-size: 9px; }
@@ -287,3 +270,23 @@ footer button { padding: 0; border: 0; background: transparent; color: #929a91; 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+body { font-size: 16px; }
+.workspace-label, .breadcrumb, .live-pill, .eyebrow, .stat-top, .stat-foot,
+.nav-item, .sidebar-promo > span, .sidebar-promo button, .welcome-subtitle,
+.date-button, .text-link, .path-card h3, .path-card > p, .path-meta > span,
+.path-meta b, .path-card-bottom i, .market-desc, .job-copy b, .job-copy small,
+.job-salary, .market-footer, .empty-market > div, .inline-error, .online-status,
+.chat-form input, .chat-meta,
+.model-picker select, .message-bubble, .retrieval-chip, .demo-note,
+.source-list b, .source-list a, .tool-card-head, .tool-card-content > div,
+.tool-card-content > div b, .tool-card-content small, .typing, .disclaimer,
+footer, footer button, .history-item > span, .history-item p,
+.history-actions button, .empty-history { font-size: 12px; }
+.nav-count { font-size: 12px; }
+.stat-main { font-size: 25px; }
+.path-card h3 { font-size: 16px; }
+.market-header h2, .advisor-heading h2 { font-size: 18px; }
+.chat-form input, .market-search input, .market-search button { font-size: 14px; }
+.market-footer { min-height: 40px; }
+.date-button { font-size: 12px; }

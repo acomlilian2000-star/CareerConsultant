@@ -2,10 +2,10 @@ import { retrieveKnowledge, translateCareerQuery } from "../lib/rag";
 
 const cases = [
   { query: "What skills should a frontend developer learn?", expected: "roadmap" },
-  { query: "How can I compare junior pay and rent?", expected: "marketpulse-estimates" },
+  { query: "How can I compare junior pay and rent?", expected: "bls-outlook" },
   { query: "What does the World Economic Forum say about emerging skills?", expected: "wef-skills" },
   { query: "Where can I find remote software listings?", expected: "remotive" },
-  { query: "Compare junior pay and rent in London", expected: "marketpulse-estimates", topic: "salary", location: "London" },
+  { query: "Compare junior pay in the United States", expected: "bls-outlook", topic: "salary", location: "United States" },
   { query: "Build me a 12-week frontend roadmap", expected: "roadmap", topic: "learning" },
 ];
 

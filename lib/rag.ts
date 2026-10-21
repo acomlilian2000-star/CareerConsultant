@@ -1,7 +1,7 @@
 import { Document } from "@langchain/core/documents";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { cities, knowledgeBase, type City } from "@/lib/knowledge";
+import { knowledgeBase } from "@/lib/knowledge";
 
 export type RetrievalTopic = "skills" | "salary" | "jobs" | "learning" | "portfolio";
 export type RetrievalPlan = {
@@ -48,9 +48,14 @@ export function translateCareerQuery(query: string): RetrievalPlan {
             : /\b(skill|skills|trend|demand|emerging|future)\b/.test(normalized)
               ? "skills"
               : undefined;
-  const location = (Object.keys(cities) as City[]).find((city) =>
-    normalized.includes(city.toLowerCase()),
-  );
+  const location = knowledgeBase
+    .flatMap((source) => source.locations)
+    .find(
+      (candidate) =>
+        candidate !== "global" &&
+        candidate !== "remote" &&
+        normalized.includes(candidate.toLowerCase()),
+    );
 
   return {
     originalQuery: query,

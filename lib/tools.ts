@@ -1,6 +1,5 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
-import { cities, type City } from "@/lib/knowledge";
 
 export type ToolResult = {
   name: string;
@@ -8,53 +7,6 @@ export type ToolResult = {
   result: Record<string, unknown>;
 };
 
-const citySchema = z.enum(["New York", "London", "Nairobi"]);
-
-const salaryPathTool = new DynamicStructuredTool({
-    name: "salary_path",
-    description:
-      "Estimate a junior developer salary band, monthly take-home after a simple 20% planning deduction, and income growth over a selected career horizon for a city.",
-    schema: z.object({
-      city: citySchema,
-      years: z.number().int().min(1).max(10).default(3),
-    }),
-    func: async ({ city, years }) => {
-      const estimate = cities[city as City];
-      const midpoint = (estimate.salaryMin + estimate.salaryMax) / 2;
-      const growth = 1 + Math.min(years, 10) * 0.08;
-      return JSON.stringify({
-        city,
-        currency: estimate.currency,
-        entryLevelGrossAnnual: [estimate.salaryMin, estimate.salaryMax],
-        estimatedMonthlyNetAtMidpoint: Math.round((midpoint * 0.8) / 12),
-        estimatedGrossAfterYears: years,
-        estimatedGrossAnnualAfterYears: Math.round(midpoint * growth),
-        assumption:
-          "Illustrative planning estimate only; 20% deduction and 8% annual growth are simplified assumptions, not tax or wage advice.",
-      });
-    },
-  });
-const housingAffordabilityTool = new DynamicStructuredTool({
-    name: "housing_affordability",
-    description:
-      "Compare the city's illustrative monthly rent with estimated entry-level monthly take-home pay and calculate a rent-to-net-income ratio.",
-    schema: z.object({ city: citySchema }),
-    func: async ({ city }) => {
-      const estimate = cities[city as City];
-      const midpoint = (estimate.salaryMin + estimate.salaryMax) / 2;
-      const monthlyNet = (midpoint * 0.8) / 12;
-      const ratio = (estimate.rent / monthlyNet) * 100;
-      return JSON.stringify({
-        city,
-        currency: estimate.currency,
-        estimatedMonthlyRent: estimate.rent,
-        estimatedMonthlyNetAtSalaryMidpoint: Math.round(monthlyNet),
-        estimatedRentToNetIncomePercent: Number(ratio.toFixed(1)),
-        note:
-          "Illustrative defaults, not live housing data. A ratio above 30% is a commonly used budgeting flag, not a universal rule.",
-      });
-    },
-  });
 const learningRoadmapTool = new DynamicStructuredTool({
     name: "learning_roadmap",
     description:
@@ -95,18 +47,10 @@ const learningRoadmapTool = new DynamicStructuredTool({
     },
   });
 
-export const careerTools = [
-  salaryPathTool,
-  housingAffordabilityTool,
-  learningRoadmapTool,
-];
+export const careerTools = [learningRoadmapTool];
 
 export async function invokeCareerTool(name: string, args: unknown) {
   switch (name) {
-    case "salary_path":
-      return salaryPathTool.invoke(salaryPathTool.schema.parse(args));
-    case "housing_affordability":
-      return housingAffordabilityTool.invoke(housingAffordabilityTool.schema.parse(args));
     case "learning_roadmap":
       return learningRoadmapTool.invoke(learningRoadmapTool.schema.parse(args));
     default:
@@ -115,8 +59,6 @@ export async function invokeCareerTool(name: string, args: unknown) {
 }
 
 export const toolLabels: Record<string, string> = {
-  salary_path: "Salary growth estimate",
-  housing_affordability: "Housing affordability",
   learning_roadmap: "12-week learning roadmap",
 };
 

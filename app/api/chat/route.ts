@@ -39,7 +39,7 @@ function fallbackAnswer(
 ): string {
   const context = sources.map((source, i) => `[S${i + 1}] ${source.content}`).join("\n\n");
   if (/salary|pay|income|earn/i.test(message)) {
-    return `I found relevant planning information, but a configured OpenAI API key is needed for a personalized answer. The example salary figures in this demo are illustrative only and should be checked against current local job listings.\n\n${context}`;
+    return `I can retrieve general wage information, but this app does not currently have a verified live regional salary or housing data source. A configured OpenAI API key enables personalized discussion; it does not make unavailable market data current. Check current local postings and official sources before making decisions.\n\n${context}`;
   }
   if (/roadmap|learn|study|skill|where.*start/i.test(message)) {
     return `A useful starting point is to pick one target track and build a small, deployed project instead of trying to learn every framework at once. The sources below describe practical skill areas; configure an OpenAI API key for personalized follow-up questions.\n\n${context}`;
