@@ -143,6 +143,7 @@ export default function Home() {
   const refreshJobs = useCallback(async (search = "software developer") => {
     setJobsLoading(true);
     setMarketError("");
+    setCategoryFilter("");
     setJobs([]);
     setTotalJobCount(0);
     setFetchedAt("");
