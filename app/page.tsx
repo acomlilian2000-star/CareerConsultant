@@ -10,7 +10,6 @@ import {
   Clock3,
   Code2,
   Command,
-  Download,
   ExternalLink,
   FileText,
   Filter,
@@ -32,11 +31,15 @@ type Job = {
   id: string;
   title: string;
   company: string;
-  location: string;
+  employerLocation: string;
+  eligibilityLocation: string;
   salary: string;
   url: string;
   date: string;
   category: string;
+  jobType: string;
+  tags: string[];
+  description: string;
 };
 type Citation = {
   id: string;
@@ -92,11 +95,18 @@ export default function Home() {
   const [model, setModel] = useState(models[0].id);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [totalJobCount, setTotalJobCount] = useState(0);
-  const [marketSearch, setMarketSearch] = useState("software developer");
+  const [snapshotSize, setSnapshotSize] = useState(0);
+  const [marketSearch, setMarketSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [jobsLoading, setJobsLoading] = useState(false);
   const [marketError, setMarketError] = useState("");
   const [fetchedAt, setFetchedAt] = useState("");
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [coverLetterFile, setCoverLetterFile] = useState<File | null>(null);
+  const [tailoring, setTailoring] = useState(false);
+  const [tailorError, setTailorError] = useState("");
+  const [tailorFeedback, setTailorFeedback] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const [activeNav, setActiveNav] = useState("Overview");
   const [mobileMenu, setMobileMenu] = useState(false);
@@ -140,24 +150,32 @@ export default function Home() {
     window.localStorage.setItem("marketpulse-history", JSON.stringify(messages.slice(-30)));
   }, [messages]);
 
-  const refreshJobs = useCallback(async (search = "software developer") => {
+  const refreshJobs = useCallback(async (search: string) => {
     setJobsLoading(true);
     setMarketError("");
     setCategoryFilter("");
+    setSelectedJob(null);
+    setCvFile(null);
+    setCoverLetterFile(null);
+    setTailorError("");
+    setTailorFeedback("");
     setJobs([]);
     setTotalJobCount(0);
+    setSnapshotSize(0);
     setFetchedAt("");
     try {
       const response = await fetch(`/api/market?search=${encodeURIComponent(search)}`);
       const result = (await response.json()) as {
         jobs?: Job[];
         totalJobCount?: number;
+        snapshotSize?: number;
         fetchedAt?: string;
         error?: string;
       };
       if (!response.ok) throw new Error(result.error || "Could not refresh jobs.");
       setJobs(result.jobs ?? []);
       setTotalJobCount(result.totalJobCount ?? result.jobs?.length ?? 0);
+      setSnapshotSize(result.snapshotSize ?? 0);
       setFetchedAt(result.fetchedAt ?? "");
     } catch (error) {
       setMarketError(error instanceof Error ? error.message : "Could not refresh jobs.");
@@ -167,8 +185,30 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    void refreshJobs();
+    void refreshJobs("");
   }, [refreshJobs]);
+
+  async function reviewDocuments(event: FormEvent) {
+    event.preventDefault();
+    if (!selectedJob || (!cvFile && !coverLetterFile) || tailoring) return;
+    setTailoring(true);
+    setTailorError("");
+    setTailorFeedback("");
+    const form = new FormData();
+    form.append("jobId", selectedJob.id);
+    if (cvFile) form.append("cv", cvFile);
+    if (coverLetterFile) form.append("coverLetter", coverLetterFile);
+    try {
+      const response = await fetch("/api/tailor", { method: "POST", body: form });
+      const result = (await response.json()) as { feedback?: string; error?: string };
+      if (!response.ok) throw new Error(result.error || "Could not review these documents.");
+      setTailorFeedback(result.feedback ?? "");
+    } catch (error) {
+      setTailorError(error instanceof Error ? error.message : "Could not review these documents.");
+    } finally {
+      setTailoring(false);
+    }
+  }
 
   async function sendMessage(event?: FormEvent, suggested?: string) {
     event?.preventDefault();
@@ -226,19 +266,6 @@ export default function Home() {
     window.localStorage.removeItem("marketpulse-history");
   }
 
-  function exportConversation(format: "json" | "csv") {
-    const content =
-      format === "json"
-        ? JSON.stringify(messages, null, 2)
-        : ["role,content", ...messages.map((item) => `${item.role},"${item.content.replaceAll('"', '""')}"`)].join("\n");
-    const blob = new Blob([content], { type: format === "json" ? "application/json" : "text/csv" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `marketpulse-conversation.${format}`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  }
-
   const totalMessages = useMemo(() => messages.length, [messages]);
   const topCategory = useMemo(() => {
     const counts = jobs.reduce<Record<string, number>>((result, job) => {
@@ -264,6 +291,13 @@ export default function Home() {
   const openMarketFeed = () => {
     marketSection.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+  const selectJob = (job: Job | null) => {
+    setSelectedJob(job);
+    setCvFile(null);
+    setCoverLetterFile(null);
+    setTailorError("");
+    setTailorFeedback("");
+  };
 
   return (
     <main className="app-shell">
@@ -275,7 +309,7 @@ export default function Home() {
         <div className="workspace-label">WORKSPACE</div>
         <button className={`nav-item ${activeNav === "Overview" ? "selected" : ""}`} onClick={() => setActiveNav("Overview")}><span className="nav-icon"><Command size={16} /></span> Overview</button>
         <button className={`nav-item ${activeNav === "Career paths" ? "selected" : ""}`} onClick={() => setActiveNav("Career paths")}><span className="nav-icon"><Code2 size={16} /></span> Career paths</button>
-        <button className={`nav-item ${activeNav === "Market explorer" ? "selected" : ""}`} onClick={() => { setActiveNav("Market explorer"); void refreshJobs(marketSearch); }}><span className="nav-icon"><Globe2 size={16} /></span> Market explorer</button>
+        <button className={`nav-item ${activeNav === "Market explorer" ? "selected" : ""}`} onClick={() => { setActiveNav("Market explorer"); openMarketFeed(); }}><span className="nav-icon"><Globe2 size={16} /></span> Market explorer</button>
         <button className={`nav-item ${activeNav === "Learning plan" ? "selected" : ""}`} onClick={() => { setActiveNav("Learning plan"); sendMessage(undefined, "Create a 12-week learning roadmap for me."); }}><span className="nav-icon"><GraduationCap size={16} /></span> Learning plan</button>
         <div className="sidebar-divider" />
         <div className="workspace-label">YOUR ACTIVITY</div>
@@ -297,7 +331,7 @@ export default function Home() {
           <button className="mobile-menu" aria-label="Toggle menu" onClick={() => setMobileMenu(!mobileMenu)}><Menu size={19} /></button>
           <div className="breadcrumb">Workspace <span>/</span> <b>{activeNav}</b></div>
           <div className="top-actions">
-            <span className={`live-pill ${marketError ? "offline" : ""}`}><span />{jobsLoading ? "Loading live feed" : marketError ? "Live feed unavailable" : fetchedAt ? `${totalJobCount} live listings` : "Live feed not loaded"}</span>
+            <span className={`live-pill ${marketError ? "offline" : ""}`}><span />{jobsLoading ? "Loading job snapshot" : marketError ? "Job snapshot unavailable" : fetchedAt ? `${snapshotSize} source snapshot listings` : "Job snapshot not loaded"}</span>
             <button className="help-button" aria-label="Help" title="Ask the career advisor"><CircleHelp size={18} /></button>
           </div>
         </header>
@@ -316,7 +350,7 @@ export default function Home() {
             <button className="stat-card stat-card-action" type="button" onClick={openMarketFeed} aria-label="View live remote job listings">
               <div className="stat-top"><span>LIVE REMOTE LISTINGS</span><span className="stat-icon green"><BriefcaseBusiness size={16} /></span></div>
               <div className="stat-main">{jobsLoading ? "…" : fetchedAt ? totalJobCount : "—"}</div>
-              <div className="stat-foot">{fetchedAt ? `Search matches · showing ${jobs.length} returned listings` : marketError ? "Live feed unavailable · click to retry" : "Waiting for current search results"}</div>
+              <div className="stat-foot">{fetchedAt ? `${totalJobCount} matches in source snapshot · showing ${jobs.length}` : marketError ? "Source snapshot unavailable · click to retry" : "Waiting for current search results"}</div>
             </button>
             <button
               className={`stat-card stat-card-action ${categoryFilter === topCategory && topCategory ? "active" : ""}`}
@@ -364,32 +398,63 @@ export default function Home() {
             <section className="market-card" id="market-pulse" ref={marketSection}>
               <div className="market-header">
                 <div><div className="eyebrow small"><span className="eyebrow-line" /> LIVE MARKET PULSE</div><h2>Fresh roles, real signals</h2></div>
-                <button className="icon-action" aria-label="Refresh market listings" onClick={() => void refreshJobs(marketSearch)} disabled={jobsLoading}>{jobsLoading ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={15} />}</button>
+                <button className="icon-action" aria-label="Reload cached job snapshot" onClick={() => void refreshJobs(marketSearch)} disabled={jobsLoading}>{jobsLoading ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={15} />}</button>
               </div>
-              <p className="market-desc">Search current remote listings. Pulse cards use the returned Remotive results; listings may be delayed up to 24 hours.</p>
+              <p className="market-desc">Search a once-daily Remotive snapshot (up to 10 roles). Results rank against your terms; eligibility is not the employer&apos;s location. Listings may be delayed up to 24 hours.</p>
               <form className="market-search" onSubmit={(event) => { event.preventDefault(); void refreshJobs(marketSearch); }}>
-                <input aria-label="Search live remote jobs" value={marketSearch} onChange={(event) => setMarketSearch(event.target.value)} maxLength={80} />
-                <button type="submit" disabled={jobsLoading || !marketSearch.trim()}>{jobsLoading ? "Searching…" : "Search live roles"}</button>
+                <input aria-label="Search remote job snapshot" placeholder="e.g. React developer, data analyst, Python" value={marketSearch} onChange={(event) => setMarketSearch(event.target.value)} maxLength={80} />
+                <button type="submit" disabled={jobsLoading}>{jobsLoading ? "Searching…" : "Search roles"}</button>
               </form>
               {marketError && <div className="inline-error">{marketError}</div>}
               {categoryFilter && <div className="market-filter">Showing {categoryFilter} <button type="button" onClick={() => setCategoryFilter("")}>Clear filter</button></div>}
               <div className="job-list">
                 {visibleJobs.length ? visibleJobs.map((job) => (
-                  <a className="job-row" href={job.url} target="_blank" rel="noreferrer" key={job.id}>
+                  <article className="job-row" key={job.id}>
                     <span className="company-logo">{job.company.slice(0, 1).toUpperCase()}</span>
-                    <span className="job-copy"><b>{job.title}</b><small>{job.company} · {job.location}</small></span>
-                    <span className="job-salary">{job.salary !== "Not listed" ? job.salary : "View listing"}<ArrowUpRight size={12} /></span>
-                  </a>
+                    <span className="job-copy"><b>{job.title}</b><small>{job.company} · Eligible: {job.eligibilityLocation || "Not provided"}</small></span>
+                    <span className="job-actions">
+                      <button type="button" className="job-details-button" onClick={() => selectJob(job)}>{selectedJob?.id === job.id ? "Selected" : "Details & CV review"}</button>
+                      <a className="job-salary" href={job.url} target="_blank" rel="noreferrer" aria-label={`Open ${job.title} at ${job.company}`}><ExternalLink size={14} /></a>
+                    </span>
+                  </article>
                 )) : <div className="empty-market"><div>{jobsLoading ? <><LoaderCircle className="spin" size={17} /> Fetching current public listings…</> : marketError ? <><BriefcaseBusiness size={18} />Live listings could not be loaded.</> : categoryFilter ? <><BriefcaseBusiness size={18} />No results in this category.</> : fetchedAt ? <><BriefcaseBusiness size={18} />No live listings matched this search.</> : <><BriefcaseBusiness size={18} />Search the live public jobs feed.</>}</div></div>}
               </div>
-              <div className="market-footer"><span>{fetchedAt ? `Live feed · Remotive · ${new Date(fetchedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Source: Remotive public jobs API"}</span></div>
+              {selectedJob && <section key={selectedJob.id} className="job-detail" aria-label="Selected job details">
+                <div className="job-detail-heading">
+                  <div><span className="eyebrow small"><span className="eyebrow-line" /> SOURCE LISTING</span><h3>{selectedJob.title} · {selectedJob.company}</h3></div>
+                  <button type="button" className="icon-action" aria-label="Close selected job" onClick={() => selectJob(null)}><X size={16} /></button>
+                </div>
+                <dl className="job-facts">
+                  <div><dt>Employer location</dt><dd>{selectedJob.employerLocation || "Not provided by source"}</dd></div>
+                  <div><dt>Hiring eligibility</dt><dd>{selectedJob.eligibilityLocation || "Not provided by source"}</dd></div>
+                  <div><dt>Posted</dt><dd>{Number.isFinite(Date.parse(selectedJob.date)) ? new Date(selectedJob.date).toLocaleDateString() : "Not provided by source"}</dd></div>
+                  <div><dt>Salary</dt><dd>{selectedJob.salary || "Not provided by source"}</dd></div>
+                  <div><dt>Job type</dt><dd>{selectedJob.jobType || "Not provided by source"}</dd></div>
+                  <div><dt>Applicants</dt><dd>Count not provided by source</dd></div>
+                  <div><dt>Employment terms</dt><dd>Formal contract terms not provided; verify with employer</dd></div>
+                </dl>
+                <div className="job-tags">{selectedJob.tags.length ? selectedJob.tags.map((tag) => <span key={tag}>{tag}</span>) : <span>Tags not provided by source</span>}</div>
+                <h4>Requirements and description from the listing</h4>
+                <pre className="job-description">{selectedJob.description ? selectedJob.description.slice(0, 8_000) : "Description not provided by source. See the original listing for current details."}</pre>
+                <a className="original-job-link" href={selectedJob.url} target="_blank" rel="noreferrer">Open original company listing <ArrowUpRight size={14} /></a>
+                <form className="tailor-form" onSubmit={(event) => void reviewDocuments(event)}>
+                  <h4>Get job-specific CV feedback</h4>
+                  <p>Upload a CV, cover letter, or both. PDF, DOCX, and TXT files up to 5 MB each.</p>
+                  <label>CV <input type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" onChange={(event) => { setCvFile(event.target.files?.[0] ?? null); setTailorFeedback(""); setTailorError(""); }} /></label>
+                  <label>Cover letter <input type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" onChange={(event) => { setCoverLetterFile(event.target.files?.[0] ?? null); setTailorFeedback(""); setTailorError(""); }} /></label>
+                  <div className="document-privacy">Files are processed in memory for this request and are not saved by MarketPulse. Their text is sent to OpenAI for feedback.</div>
+                  {tailorError && <div className="inline-error">{tailorError}</div>}
+                  <button className="tailor-submit" type="submit" disabled={tailoring || (!cvFile && !coverLetterFile)}>{tailoring ? "Reviewing documents…" : "Review against this job"}</button>
+                  {tailorFeedback && <div className="tailor-feedback"><h4>Feedback for {selectedJob.company}</h4><div>{tailorFeedback}</div></div>}
+                </form>
+              </section>}
+              <div className="market-footer"><span>{fetchedAt ? `Remotive snapshot · ${new Date(fetchedAt).toLocaleString()}` : "Source: Remotive public jobs API"}</span><span>{fetchedAt ? `Up to ${snapshotSize} roles` : "Loading source snapshot"}</span></div>
             </section>
 
             <section className="advisor-card" id="advisor">
               <div className="advisor-heading">
                 <span className="advisor-icon"><Sparkles size={17} /></span>
                 <div><h2>Your career advisor</h2><span className="online-status"><i /> Here to help you figure it out</span></div>
-                <button className="more-button" title="Export conversation" onClick={() => exportConversation("json")}><Download size={16} /></button>
               </div>
               <div className="chat-content">
                 {!messages.length ? (
@@ -425,12 +490,12 @@ export default function Home() {
           </div>
 
           <div className="disclaimer"><ShieldCheck size={13} /> Salary and housing benchmarks are not displayed because no verified live regional data source is connected. Job listings are sourced from Remotive and may change; confirm details with the original posting.</div>
-          <footer><span>© {new Date().getFullYear()} MarketPulse</span><span><a href="https://www.weforum.org/publications/the-future-of-jobs-report-2025/" target="_blank" rel="noreferrer">Data sources</a><span className="footer-dot">·</span><button onClick={() => void refreshKnowledge()}>Knowledge base</button><span className="footer-dot">·</span><button onClick={() => setShowHistory(true)}>Export &amp; history</button></span></footer>
+          <footer><span>© {new Date().getFullYear()} MarketPulse</span><span><a href="https://www.weforum.org/publications/the-future-of-jobs-report-2025/" target="_blank" rel="noreferrer">Data sources</a><span className="footer-dot">·</span><button onClick={() => void refreshKnowledge()}>Knowledge base</button><span className="footer-dot">·</span><button onClick={() => setShowHistory(true)}>Conversation history</button></span></footer>
         </div>
       </section>
 
       {notice && <div className="toast"><Check size={14} /> {notice}</div>}
-      {showHistory && <div className="modal-backdrop" onClick={() => setShowHistory(false)}><section className="history-modal" onClick={(event) => event.stopPropagation()}><div className="modal-header"><div><span className="eyebrow small"><span className="eyebrow-line" /> YOUR ACTIVITY</span><h2>Conversation history</h2></div><button className="icon-action" onClick={() => setShowHistory(false)} aria-label="Close"><X size={18} /></button></div><p>Your recent conversation is saved on this device only.</p><div className="history-actions"><button onClick={() => exportConversation("json")}><Download size={15} /> Export JSON</button><button onClick={() => exportConversation("csv")}><Download size={15} /> Export CSV</button><button className="clear-button" onClick={clearHistory}>Clear history</button></div><div className="history-list">{messages.length ? messages.slice(-12).map((item, index) => <div key={index} className={`history-item ${item.role}`}><span>{item.role === "user" ? "YOU" : "ADVISOR"}</span><p>{item.content}</p></div>) : <div className="empty-history">Your conversation will appear here.</div>}</div></section></div>}
+      {showHistory && <div className="modal-backdrop" onClick={() => setShowHistory(false)}><section className="history-modal" onClick={(event) => event.stopPropagation()}><div className="modal-header"><div><span className="eyebrow small"><span className="eyebrow-line" /> YOUR ACTIVITY</span><h2>Conversation history</h2></div><button className="icon-action" onClick={() => setShowHistory(false)} aria-label="Close"><X size={18} /></button></div><p>Your recent conversation is saved on this device only.</p><div className="history-actions"><button className="clear-button" onClick={clearHistory}>Clear history</button></div><div className="history-list">{messages.length ? messages.slice(-12).map((item, index) => <div key={index} className={`history-item ${item.role}`}><span>{item.role === "user" ? "YOU" : "ADVISOR"}</span><p>{item.content}</p></div>) : <div className="empty-history">Your conversation will appear here.</div>}</div></section></div>}
       {mobileMenu && <button className="mobile-scrim" aria-label="Close menu" onClick={() => setMobileMenu(false)} />}
     </main>
   );

@@ -2,11 +2,11 @@
 
 MarketPulse is a Next.js career-advising app for early-career developers. It combines a cited career knowledge base, hybrid retrieval-augmented generation (RAG), OpenAI chat and embedding models, a learning-roadmap tool, and a responsive dashboard.
 
-MarketPulse displays live remote job listings from Remotive. Dashboard listing counts, categories, and latest-posting dates are calculated from the current search results. The app does not display salary or housing benchmarks because a verified live regional data source is not connected.
+MarketPulse displays public remote job listings from Remotive. It loads up to 10 listings into a server-side 24-hour snapshot, then ranks searches locally against job titles, tags, categories, and descriptions. Pulse counts describe matches in that snapshot, not every open role worldwide. Remotive says listings may be delayed by up to 24 hours. The app does not display salary or housing benchmarks because a verified live regional data source is not connected.
 
 ## Run locally
 
-Requirements: Node.js 20 or newer and npm.
+Requirements: Node.js 20.16 or newer (20.x), or 22.3 or newer (22.x), and npm.
 
 ```bash
 npm install
@@ -23,10 +23,11 @@ The model picker offers OpenAI's `gpt-4o-mini` and `gpt-4.1-mini` models.
 - **RAG:** a five-source career knowledge base is split into overlapping chunks with LangChain's `RecursiveCharacterTextSplitter`. A deterministic query-translation step expands career language into search terms and extracts topic/location metadata; those structured signals guide ranking alongside keyword overlap and, when configured, cosine similarity. Without embeddings, transparent keyword retrieval remains available. Responses show source links, retrieval mode, topic/location, and the translated search query.
 - **Tool calling:** a LangChain tool creates a staged 12-week learning plan. Tool results are rendered as cards.
 - **LLM integration:** LangChain `ChatOpenAI` uses OpenAI's API. The model can be selected in the UI. Without a key, the app returns an explicit, retrieval-grounded demo response.
-- **Live market signals:** search public remote roles from Remotive; the listing count, most common category, and latest posting date reflect the returned results. Click the listing-count card to jump to the feed, the category card to filter the results, or the latest-posting card to open the original job. Remotive says its API listings may be delayed by 24 hours.
+- **Source-backed job search:** search a daily Remotive snapshot of up to 10 roles. Results are ranked against the entered role/skill terms; employer location and candidate eligibility are separate fields. Job details show the original description, source-provided salary/type/tags/date, and explicit “not provided” labels for absent fields. Remotive does not provide applicant counts or formal contract terms in this feed; verify all requirements with the linked employer listing.
+- **CV and cover-letter review:** select a listing and upload a PDF, DOCX, or TXT document (up to 5 MB each) for feedback against that source listing. At least one document is required; either or both can be uploaded. Text is extracted in memory and sent to OpenAI for the requested review. MarketPulse does not save uploaded files or extracted text. Do not upload information you do not want sent to OpenAI.
 - **Safety:** server-only credentials, input size/schema validation, request throttling, prompt-injection pattern detection, explicit untrusted-context boundaries, and safe tool schemas. Avoid sending personal or sensitive information.
-- **Easy bonuses:** conversation history in local storage, JSON/CSV export, source citations, retrieval mode/warning visualization, and suggested prompts.
-- **Medium bonuses:** selectable models, on-demand live job refresh, prompt-injection defenses, rough token/cost reporting when provider usage is returned, and tool-result visualizations.
+- **Easy bonuses:** conversation history in local storage, source citations, and retrieval mode/warning visualization.
+- **Medium bonuses:** selectable chat models, search over cached job data, prompt-injection defenses, rough token/cost reporting when provider usage is returned, and tool-result visualizations.
 - **Hard bonus:** hybrid search and a small repeatable RAG retrieval evaluation.
 
 ## Architecture
@@ -38,11 +39,12 @@ Next.js dashboard
   │     ├── LangChain text splitting → hybrid retrieval
   │     ├── OpenAI ChatOpenAI → learning-roadmap tool call
   │     └── Answer + citations + retrieval/tool/usage metadata
-  ├── GET /api/market → Remotive public jobs API
+  ├── GET /api/market → daily Remotive snapshot + local relevance ranking
+  ├── POST /api/tailor → in-memory file extraction → OpenAI job-specific feedback
   └── POST /api/knowledge/refresh → rebuild chunks / warm embeddings
 ```
 
-The knowledge index and demo rate limiter are in-memory, suitable for a single-process prototype only. For multi-instance production use, use a persistent vector database and shared rate-limit store, authenticate accounts, add observability, and connect verified, dated regional salary and housing sources before displaying those benchmarks. Token costs are estimates based on hard-coded published model rates and should not be treated as billing.
+The knowledge index, job snapshot, and demo rate limiter are in-memory, suitable for a single-process prototype only. In a multi-instance deployment, the job snapshot may be fetched once per instance. For production use, use a shared cache and rate-limit store, authenticate accounts, add observability, and connect verified, dated regional salary and housing sources before displaying those benchmarks. Token costs are estimates based on hard-coded published model rates and should not be treated as billing.
 
 ## Evaluation and checks
 

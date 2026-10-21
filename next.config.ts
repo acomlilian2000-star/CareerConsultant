@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
     "@langchain/openai",
     "@langchain/textsplitters",
     "langsmith",
+    "mammoth",
+    "pdf-parse",
   ],
 };
 

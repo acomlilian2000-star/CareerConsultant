@@ -37,11 +37,11 @@ export const knowledgeBase: KnowledgeSource[] = [
     title: "Remote software job listings",
     publisher: "Remotive public jobs API",
     url: "https://remotive.com/remote-jobs",
-    updated: "Fetched live on page load and search",
+    updated: "Cached for up to 24 hours",
     topics: ["jobs"],
     locations: ["remote"],
     text:
-      "MarketPulse searches public remote job listings from Remotive on page load and whenever the user searches. Listings are remote-first and are not a representative sample of a particular city's entire job market. Job titles, descriptions, and salary information may be incomplete or change after retrieval. Always check the original listing before applying.",
+      "MarketPulse loads up to 10 public remote job listings from Remotive into a server-side snapshot cached for up to 24 hours; searches rank that snapshot locally. Listings are remote-first and are not a representative sample of a particular city's entire job market. Candidate eligibility is not necessarily the employer's location. Remotive says listings may be delayed by up to 24 hours, and its feed does not provide applicant counts or formal employment terms. Job titles, descriptions, and salary information may be incomplete or change after retrieval. Always check the original listing before applying.",
   },
   {
     id: "roadmap",

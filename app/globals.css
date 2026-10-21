@@ -107,7 +107,7 @@ h2 { margin-top: 6px; font: 700 18px var(--font-display); letter-spacing: -.65px
 .market-card { padding: 15px 15px 0; }
 .market-header { align-items: center; }
 .market-header h2 { font-size: 16px; }
-.icon-action, .more-button { display: grid; width: 29px; height: 29px; place-items: center; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: #7c857b; }
+.icon-action { display: grid; width: 29px; height: 29px; place-items: center; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: #7c857b; }
 .icon-action:disabled { cursor: wait; }
 .market-desc { margin-top: 5px; color: #929991; font-size: 9px; }
 .job-list { margin-top: 13px; }
@@ -117,7 +117,32 @@ h2 { margin-top: 6px; font: 700 18px var(--font-display); letter-spacing: -.65px
 .job-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }
 .job-copy b { overflow: hidden; color: #505a50; font-size: 10px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .job-copy small { overflow: hidden; color: #9ba19a; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-.job-salary { display: flex; flex: 0 0 auto; align-items: center; gap: 3px; color: #788477; font-size: 8px; }
+.job-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
+.job-details-button, .original-job-link { display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; border: 1px solid #e6ece5; border-radius: 5px; background: #fff; color: #55765b; font-size: 11px; font-weight: 600; }
+.job-details-button:hover, .original-job-link:hover { border-color: #b8d0b9; background: #f7faf6; }
+.job-salary { display: flex; flex: 0 0 auto; align-items: center; color: #788477; }
+.job-detail { margin: 14px 0; padding: 14px; border: 1px solid #e6ece5; border-radius: 8px; background: #fbfcfa; }
+.job-detail-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.job-detail-heading h3 { margin-top: 6px; color: #354437; font: 700 16px/1.4 var(--font-display); }
+.job-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 16px; margin: 14px 0; }
+.job-facts > div { min-width: 0; }
+.job-facts dt { color: #858e84; font-size: 11px; }
+.job-facts dd { margin: 3px 0 0; color: #4c5b4d; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+.job-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 13px; }
+.job-tags span { padding: 4px 7px; border-radius: 4px; background: #edf4ed; color: #5d765e; font-size: 11px; }
+.job-detail h4, .tailor-form h4 { margin: 12px 0 7px; color: #405143; font-size: 14px; }
+.job-description { max-height: 250px; overflow: auto; padding: 10px; border: 1px solid #edf0eb; border-radius: 5px; background: #fff; color: #626c62; font: inherit; font-size: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.original-job-link { margin-top: 10px; }
+.tailor-form { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #e9ede8; }
+.tailor-form h4 { margin: 0; }
+.tailor-form > p, .document-privacy { color: #788277; font-size: 12px; line-height: 1.5; }
+.tailor-form label { display: grid; gap: 5px; color: #536253; font-size: 12px; font-weight: 600; }
+.tailor-form input[type="file"] { width: 100%; padding: 8px; border: 1px solid #e5ebe4; border-radius: 5px; background: #fff; color: #627062; font-size: 12px; }
+.document-privacy { padding: 8px; border-radius: 5px; background: #f1f6f0; }
+.tailor-submit { align-self: flex-start; padding: 9px 12px; border: 0; border-radius: 5px; background: var(--green); color: #fff; font-size: 12px; font-weight: 600; }
+.tailor-submit:disabled { cursor: not-allowed; opacity: .6; }
+.tailor-feedback { margin-top: 5px; padding: 12px; border: 1px solid #e1eae0; border-radius: 6px; background: #fff; }
+.tailor-feedback > div { color: #505c50; font-size: 13px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
 .market-footer { display: flex; min-height: 34px; align-items: center; justify-content: space-between; border-top: 1px solid #f0f2ef; color: #a0a69f; font-size: 8px; }
 .market-footer button { display: flex; align-items: center; gap: 5px; border: 0; background: transparent; color: #6c8d70; font-size: 9px; font-weight: 600; }
 .inline-error { margin-top: 10px; padding: 8px; border-radius: 5px; background: #fff4f0; color: #a25341; font-size: 10px; line-height: 1.5; }
@@ -131,7 +156,6 @@ h2 { margin-top: 6px; font: 700 18px var(--font-display); letter-spacing: -.65px
 .advisor-heading h2 { margin: 0; font: 700 11px var(--font-display); letter-spacing: -.1px; }
 .online-status { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: #9aa19a; font-size: 8px; }
 .online-status i { width: 5px; height: 5px; box-shadow: none; }
-.more-button { width: 27px; height: 27px; margin-left: auto; border: 0; }
 .chat-content { display: flex; min-height: 175px; flex: 1; flex-direction: column; padding: 13px 13px 5px; }
 .assistant-avatar { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 50%; background: #eaf3ea; color: #628865; }
 .empty-chat { display: grid; min-height: 130px; place-items: center; padding: 20px; color: #7d877d; text-align: center; font-size: 13px; }
@@ -263,6 +287,11 @@ footer button { padding: 0; border: 0; background: transparent; color: #929a91; 
   .path-meta { margin-top: 9px; }
   .lower-grid { margin-top: 20px; }
   .market-card { padding-right: 11px; padding-left: 11px; }
+  .job-row { flex-wrap: wrap; padding: 9px 0; }
+  .job-actions { margin-left: auto; }
+  .job-facts { grid-template-columns: 1fr; }
+  .job-detail { padding: 11px; }
+  .job-details-button { font-size: 10px; }
   .market-footer { font-size: 7px; }
   .market-footer button { font-size: 8px; }
   .advisor-card { min-height: 330px; }
