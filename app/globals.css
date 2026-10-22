@@ -146,6 +146,10 @@ h2 { margin-top: 6px; font: 700 18px var(--font-display); letter-spacing: -.65px
 .tailor-feedback > div { color: #505c50; font-size: 13px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
 .market-footer { display: flex; min-height: 34px; align-items: center; justify-content: space-between; border-top: 1px solid #f0f2ef; color: #a0a69f; font-size: 8px; }
 .market-footer button { display: flex; align-items: center; gap: 5px; border: 0; background: transparent; color: #6c8d70; font-size: 9px; font-weight: 600; }
+.job-pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; color: #7d877d; font-size: 10px; }
+.job-pagination > div { display: flex; align-items: center; gap: 8px; }
+.job-pagination button:disabled { cursor: not-allowed; opacity: .45; }
+.job-page-number { white-space: nowrap; }
 .inline-error { margin-top: 10px; padding: 8px; border-radius: 5px; background: #fff4f0; color: #a25341; font-size: 10px; line-height: 1.5; }
 .empty-market { display: grid; min-height: 110px; place-items: center; color: #929991; text-align: center; }
 .empty-market > div { display: flex; flex-direction: column; align-items: center; gap: 7px; font-size: 10px; }

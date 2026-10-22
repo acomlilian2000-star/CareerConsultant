@@ -22,6 +22,8 @@ const JobicyResponseSchema = z.object({
   jobs: z.array(JobicyJobSchema),
   jobCount: z.number().int().nonnegative().optional(),
   lastUpdate: z.string().optional(),
+  nextCursor: z.string().nullish(),
+  hasMore: z.boolean().optional(),
 });
 
 const RemotiveJobSchema = z.object({
@@ -82,6 +84,8 @@ export type JobSnapshot = {
 };
 
 const SNAPSHOT_TTL_MS = 15 * 60 * 1_000;
+const JOBICY_PAGE_SIZE = 200;
+const JOBICY_MAX_JOBS_PER_INDUSTRY = 1_000;
 const runtimeCache = globalThis as typeof globalThis & {
   signalSpringJobSnapshots?: Map<string, JobSnapshot>;
   signalSpringJobSnapshotPromises?: Map<string, Promise<JobSnapshot>>;
@@ -275,19 +279,47 @@ async function fetchJobicyJobs(): Promise<{
   const industries = ["engineering", "data-science", "cybersecurity"];
   const results = await Promise.allSettled(
     industries.map(async (industry) => {
-      const query = new URLSearchParams({ count: "50", industry });
-      const response = await fetch(
-        `https://jobicy.com/api/v2/remote-jobs?${query.toString()}`,
-        {
-          headers: { Accept: "application/json" },
-          cache: "no-store",
-          signal: AbortSignal.timeout(15_000),
-        },
-      );
-      if (!response.ok) {
-        throw new Error(`Jobicy returned status ${response.status}.`);
+      const jobs: RemoteJob[] = [];
+      const updateDates: string[] = [];
+      const seenCursors = new Set<string>();
+      let cursor: string | undefined;
+
+      while (jobs.length < JOBICY_MAX_JOBS_PER_INDUSTRY) {
+        const query = new URLSearchParams({
+          count: String(JOBICY_PAGE_SIZE),
+          industry,
+        });
+        if (cursor) query.set("cursor", cursor);
+
+        const response = await fetch(
+          `https://jobicy.com/api/jobs?${query.toString()}`,
+          {
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+            signal: AbortSignal.timeout(15_000),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`Jobicy returned status ${response.status}.`);
+        }
+
+        const payload = JobicyResponseSchema.parse(await response.json());
+        jobs.push(...mapJobicyJobs(payload));
+        if (payload.lastUpdate) updateDates.push(payload.lastUpdate);
+
+        const nextCursor = payload.nextCursor ?? undefined;
+        if (
+          !payload.hasMore ||
+          !nextCursor ||
+          seenCursors.has(nextCursor) ||
+          payload.jobs.length === 0
+        ) {
+          break;
+        }
+        seenCursors.add(nextCursor);
+        cursor = nextCursor;
       }
-      return JobicyResponseSchema.parse(await response.json());
+      return { jobs, sourceUpdatedAt: newestDate(updateDates) };
     }),
   );
 
@@ -296,8 +328,10 @@ async function fetchJobicyJobs(): Promise<{
   const errors: string[] = [];
   results.forEach((result, index) => {
     if (result.status === "fulfilled") {
-      jobs.push(...mapJobicyJobs(result.value));
-      if (result.value.lastUpdate) updateDates.push(result.value.lastUpdate);
+      jobs.push(...result.value.jobs);
+      if (result.value.sourceUpdatedAt) {
+        updateDates.push(result.value.sourceUpdatedAt);
+      }
       return;
     }
     const message =
@@ -380,7 +414,9 @@ export async function getJobSnapshot(forceRefresh = false): Promise<JobSnapshot>
 
     if (jobicyResult.status === "fulfilled") {
       jobs.push(...jobicyResult.value.jobs);
-      updateDates.push(jobicyResult.value.sourceUpdatedAt);
+      if (jobicyResult.value.sourceUpdatedAt) {
+        updateDates.push(jobicyResult.value.sourceUpdatedAt);
+      }
       sourceErrors.push(...jobicyResult.value.errors);
     } else {
       const message =

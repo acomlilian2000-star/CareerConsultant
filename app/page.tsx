@@ -90,6 +90,7 @@ const legacySuggestedQuestions = new Set([
 ]);
 const historyStorageKey = "signalspring-history";
 const legacyHistoryStorageKey = "marketpulse-history";
+const JOBS_PER_PAGE = 10;
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -101,6 +102,7 @@ export default function Home() {
   const [snapshotSize, setSnapshotSize] = useState(0);
   const [marketSearch, setMarketSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [jobPage, setJobPage] = useState(1);
   const [jobsLoading, setJobsLoading] = useState(false);
   const [marketError, setMarketError] = useState("");
   const [sourceErrors, setSourceErrors] = useState<string[]>([]);
@@ -160,11 +162,16 @@ export default function Home() {
     window.localStorage.setItem(historyStorageKey, JSON.stringify(messages.slice(-30)));
   }, [messages]);
 
+  useEffect(() => {
+    setJobPage(1);
+  }, [categoryFilter]);
+
   const refreshJobs = useCallback(async (search: string, forceRefresh = true) => {
     setJobsLoading(true);
     setMarketError("");
     setSourceErrors([]);
     setCategoryFilter("");
+    setJobPage(1);
     setSelectedJob(null);
     setCvFile(null);
     setCoverLetterFile(null);
@@ -305,9 +312,14 @@ export default function Home() {
   const topCategoryCount = topCategory
     ? jobs.filter((job) => job.category === topCategory).length
     : 0;
-  const visibleJobs = categoryFilter
+  const filteredJobs = categoryFilter
     ? jobs.filter((job) => job.category === categoryFilter)
     : jobs;
+  const pageCount = Math.max(1, Math.ceil(filteredJobs.length / JOBS_PER_PAGE));
+  const pageStart = (jobPage - 1) * JOBS_PER_PAGE;
+  const visibleJobs = filteredJobs.slice(pageStart, pageStart + JOBS_PER_PAGE);
+  const firstVisibleJob = filteredJobs.length ? pageStart + 1 : 0;
+  const lastVisibleJob = Math.min(pageStart + JOBS_PER_PAGE, filteredJobs.length);
   const navigateTo = (sectionId: string, label: string) => {
     setActiveNav(label);
     setMobileMenu(false);
@@ -452,6 +464,32 @@ export default function Home() {
                   </article>
                 )) : <div className="empty-market"><div>{jobsLoading ? <><LoaderCircle className="spin" size={17} /> Fetching current public listings…</> : marketError ? <><BriefcaseBusiness size={18} />Live listings could not be loaded.</> : categoryFilter ? <><BriefcaseBusiness size={18} />No results in this category.</> : fetchedAt ? <><BriefcaseBusiness size={18} />No live listings matched this search.</> : <><BriefcaseBusiness size={18} />Search the live public jobs feed.</>}</div></div>}
               </div>
+              {filteredJobs.length > JOBS_PER_PAGE && (
+                <nav className="job-pagination" aria-label="Job listing pages">
+                  <span>{firstVisibleJob}–{lastVisibleJob} of {filteredJobs.length}</span>
+                  <div>
+                    <button
+                      type="button"
+                      className="job-details-button"
+                      onClick={() => setJobPage((page) => Math.max(1, page - 1))}
+                      disabled={jobPage === 1}
+                      aria-label="Previous job listings"
+                    >
+                      Previous
+                    </button>
+                    <span className="job-page-number">Page {jobPage} of {pageCount}</span>
+                    <button
+                      type="button"
+                      className="job-details-button"
+                      onClick={() => setJobPage((page) => Math.min(pageCount, page + 1))}
+                      disabled={jobPage === pageCount}
+                      aria-label="Next job listings"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </nav>
+              )}
               {selectedJob && <section key={selectedJob.id} className="job-detail" aria-label="Selected job details">
                 <div className="job-detail-heading">
                   <div><span className="eyebrow small"><span className="eyebrow-line" /> SOURCE LISTING</span><h3>{selectedJob.title} · {selectedJob.company}</h3></div>

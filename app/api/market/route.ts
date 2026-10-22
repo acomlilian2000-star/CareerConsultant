@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const snapshot = await getJobSnapshot(forceRefresh);
     const matchingJobs = findRelevantJobs(snapshot.jobs, search);
     return Response.json({
-      jobs: matchingJobs.slice(0, 30),
+      jobs: matchingJobs,
       totalJobCount: matchingJobs.length,
       snapshotSize: findRelevantJobs(snapshot.jobs, "").length,
       fetchedAt: snapshot.fetchedAt,
