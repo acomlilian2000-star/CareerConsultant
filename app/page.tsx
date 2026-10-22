@@ -520,7 +520,7 @@ export default function Home() {
                   {tailorFeedback && <div className="tailor-feedback"><h4>Feedback for {selectedJob.company}</h4><div>{tailorFeedback}</div></div>}
                 </form>
               </section>}
-              <div className="market-footer"><span>Sources: <a href="https://remotive.com/" target="_blank" rel="noreferrer">Remotive</a> · <a href="https://jobicy.com/" target="_blank" rel="noreferrer">Jobicy</a> · <a href="https://remoteok.com/" target="_blank" rel="noreferrer">Remote OK</a>{fetchedAt ? ` · checked ${new Date(fetchedAt).toLocaleString()}` : ""}</span><span>{fetchedAt ? `${jobs.length} of ${totalJobCount} matches` : "Loading job listings"}</span></div>
+              <div className="market-footer"><span>Sources: <a href="https://remotive.com/" target="_blank" rel="noreferrer">Remotive</a> · <a href="https://jobicy.com/" target="_blank" rel="noreferrer">Jobicy</a> · <a href="https://remoteok.com/" target="_blank" rel="noreferrer">Remote OK</a> · <a href="https://himalayas.app/" target="_blank" rel="noreferrer">Himalayas</a>{fetchedAt ? ` · checked ${new Date(fetchedAt).toLocaleString()}` : ""}</span><span>{fetchedAt ? `${jobs.length} of ${totalJobCount} matches` : "Loading job listings"}</span></div>
             </section>
 
             <section className="advisor-card" id="advisor">
@@ -561,7 +561,7 @@ export default function Home() {
             </section>
           </div>
 
-          <div className="disclaimer"><ShieldCheck size={13} /> Salary and housing benchmarks are not displayed because no verified live regional data source is connected. Job listings come from Remotive, Jobicy, and Remote OK and may change; confirm details with the original posting.</div>
+          <div className="disclaimer"><ShieldCheck size={13} /> Salary and housing benchmarks are not displayed because no verified live regional data source is connected. Job listings come from Remotive, Jobicy, Remote OK, and Himalayas and may change; confirm details with the original posting.</div>
           <footer><span>© {new Date().getFullYear()} SignalSpring</span><span><a href="https://www.weforum.org/publications/the-future-of-jobs-report-2025/" target="_blank" rel="noreferrer">Data sources</a><span className="footer-dot">·</span><button onClick={() => void refreshKnowledge()}>Knowledge base</button><span className="footer-dot">·</span><button onClick={() => setShowHistory(true)}>Conversation history</button></span></footer>
         </div>
       </section>

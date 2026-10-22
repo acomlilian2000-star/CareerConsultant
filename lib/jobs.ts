@@ -286,7 +286,11 @@ function mapHimalayasJob(
   const timezoneRestrictions = job.timezoneRestrictions ?? [];
   const ugandaIsLocationEligible =
     locationRestrictions.length === 0 ||
-    locationRestrictions.some((location) => /uganda/i.test(location));
+    locationRestrictions.some((location) =>
+      /^(?:uganda|africa|east(?:ern)? africa|worldwide|global|anywhere)\b/i.test(
+        location.trim(),
+      ),
+    );
   const ugandaIsTimezoneEligible =
     timezoneRestrictions.length === 0 || timezoneRestrictions.includes(3);
   if (!ugandaIsLocationEligible || !ugandaIsTimezoneEligible) return undefined;
@@ -464,7 +468,10 @@ async function fetchRemoteOkJobs(): Promise<{
   return mapRemoteOkJobs(RemoteOkResponseSchema.parse(await response.json()));
 }
 
-async function fetchHimalayasJobs(): Promise<RemoteJob[]> {
+async function fetchHimalayasJobs(): Promise<{
+  jobs: RemoteJob[];
+  errors: string[];
+}> {
   const queries = ["software engineer", "developer", "machine learning"];
   const results = await Promise.allSettled(
     queries.map(async (searchTerm) => {
@@ -517,7 +524,10 @@ async function fetchHimalayasJobs(): Promise<RemoteJob[]> {
   if (jobs.length === 0 && errors.length === queries.length) {
     throw new Error(errors.join(" "));
   }
-  return [...new Map(jobs.map((job) => [job.id, job])).values()];
+  return {
+    jobs: [...new Map(jobs.map((job) => [job.id, job])).values()],
+    errors,
+  };
 }
 
 export async function getJobSnapshot(forceRefresh = false): Promise<JobSnapshot> {
@@ -586,7 +596,8 @@ export async function getJobSnapshot(forceRefresh = false): Promise<JobSnapshot>
     }
 
     if (himalayasResult.status === "fulfilled") {
-      jobs.push(...himalayasResult.value);
+      jobs.push(...himalayasResult.value.jobs);
+      sourceErrors.push(...himalayasResult.value.errors);
     } else {
       const message =
         himalayasResult.reason instanceof Error
