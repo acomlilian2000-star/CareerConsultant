@@ -60,6 +60,29 @@ const RemoteOkJobSchema = z.object({
 
 const RemoteOkResponseSchema = z.array(z.record(z.string(), z.unknown()));
 
+const HimalayasJobSchema = z.object({
+  guid: z.string().url(),
+  title: z.string(),
+  companyName: z.string(),
+  excerpt: z.string().nullish(),
+  description: z.string().nullish(),
+  employmentType: z.string().nullish(),
+  minSalary: z.number().nullish(),
+  maxSalary: z.number().nullish(),
+  salaryPeriod: z.string().nullish(),
+  currency: z.string().nullish(),
+  locationRestrictions: z.array(z.string()).nullish(),
+  timezoneRestrictions: z.array(z.number()).nullish(),
+  categories: z.array(z.string()).nullish(),
+  pubDate: z.number().or(z.string()),
+  expiryDate: z.number().or(z.string()).nullish(),
+  applicationLink: z.string().url(),
+});
+
+const HimalayasResponseSchema = z.object({
+  jobs: z.array(HimalayasJobSchema),
+});
+
 export type RemoteJob = {
   id: string;
   title: string;
@@ -68,12 +91,13 @@ export type RemoteJob = {
   eligibilityLocation: string;
   salary: string;
   url: string;
+  sourceUrl: string;
   date: string;
   category: string;
   jobType: string;
   tags: string[];
   description: string;
-  source: "Jobicy" | "Remotive" | "Remote OK";
+  source: "Jobicy" | "Remotive" | "Remote OK" | "Himalayas";
 };
 
 export type JobSnapshot = {
@@ -86,6 +110,7 @@ export type JobSnapshot = {
 const SNAPSHOT_TTL_MS = 15 * 60 * 1_000;
 const JOBICY_PAGE_SIZE = 200;
 const JOBICY_MAX_JOBS_PER_INDUSTRY = 1_000;
+const HIMALAYAS_MAX_PAGES_PER_QUERY = 10;
 const runtimeCache = globalThis as typeof globalThis & {
   signalSpringJobSnapshots?: Map<string, JobSnapshot>;
   signalSpringJobSnapshotPromises?: Map<string, Promise<JobSnapshot>>;
@@ -176,6 +201,7 @@ function mapJobicyJobs(
       eligibilityLocation: job.jobGeo?.trim() || "",
       salary: formatSalary(job),
       url: job.url,
+      sourceUrl: job.url,
       date: job.pubDate ?? "",
       category: industries[0] ?? "",
       jobType: types.join(", "),
@@ -197,6 +223,7 @@ function mapRemotiveJobs(
     eligibilityLocation: job.candidate_required_location?.trim() || "",
     salary: job.salary?.trim() || "",
     url: job.url,
+    sourceUrl: job.url,
     date: job.publication_date,
     category: job.category?.trim() || "",
     jobType: job.job_type?.trim() || "",
@@ -228,6 +255,7 @@ function mapRemoteOkJobs(records: z.infer<typeof RemoteOkResponseSchema>): {
       eligibilityLocation: job.location?.trim() || "",
       salary,
       url: job.url,
+      sourceUrl: job.url,
       date: job.date ?? "",
       category: "",
       jobType: "",
@@ -249,6 +277,64 @@ function newestDate(dates: string[]): string {
       .filter((date) => Number.isFinite(Date.parse(date)))
       .sort((a, b) => Date.parse(b) - Date.parse(a))[0] ?? ""
   );
+}
+
+function mapHimalayasJob(
+  job: z.infer<typeof HimalayasJobSchema>,
+): RemoteJob | undefined {
+  const locationRestrictions = job.locationRestrictions ?? [];
+  const timezoneRestrictions = job.timezoneRestrictions ?? [];
+  const ugandaIsLocationEligible =
+    locationRestrictions.length === 0 ||
+    locationRestrictions.some((location) => /uganda/i.test(location));
+  const ugandaIsTimezoneEligible =
+    timezoneRestrictions.length === 0 || timezoneRestrictions.includes(3);
+  if (!ugandaIsLocationEligible || !ugandaIsTimezoneEligible) return undefined;
+
+  const eligibilityLocation = locationRestrictions.length
+    ? locationRestrictions.join(", ")
+    : timezoneRestrictions.length === 0 || timezoneRestrictions.length >= 30
+      ? "Worldwide (Uganda eligible)"
+      : "Uganda eligible (UTC+3)";
+  const salaryRange = [job.minSalary, job.maxSalary]
+    .filter((amount) => amount != null)
+    .join("–");
+  const salary = [
+    job.currency,
+    salaryRange,
+    salaryRange ? job.salaryPeriod : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const postedAt = Number(job.pubDate);
+  const expiresAt = Number(job.expiryDate);
+  if (
+    job.expiryDate != null &&
+    Number.isFinite(expiresAt) &&
+    (expiresAt < 1_000_000_000_000 ? expiresAt * 1_000 : expiresAt) <
+      Date.now()
+  ) {
+    return undefined;
+  }
+
+  return {
+    id: `himalayas-${job.guid}`,
+    title: job.title,
+    company: job.companyName.trim(),
+    employerLocation: "",
+    eligibilityLocation,
+    salary,
+    url: job.applicationLink,
+    sourceUrl: job.guid,
+    date: Number.isFinite(postedAt)
+      ? new Date(postedAt < 1_000_000_000_000 ? postedAt * 1_000 : postedAt).toISOString()
+      : "",
+    category: job.categories?.[0] ?? "",
+    jobType: job.employmentType ?? "",
+    tags: job.categories ?? [],
+    description: plainText(job.description || job.excerpt || ""),
+    source: "Himalayas",
+  };
 }
 
 const nonEngineeringRolePattern =
@@ -378,6 +464,62 @@ async function fetchRemoteOkJobs(): Promise<{
   return mapRemoteOkJobs(RemoteOkResponseSchema.parse(await response.json()));
 }
 
+async function fetchHimalayasJobs(): Promise<RemoteJob[]> {
+  const queries = ["software engineer", "developer", "machine learning"];
+  const results = await Promise.allSettled(
+    queries.map(async (searchTerm) => {
+      const jobs: RemoteJob[] = [];
+      for (
+        let page = 1;
+        page <= HIMALAYAS_MAX_PAGES_PER_QUERY;
+        page += 1
+      ) {
+        const query = new URLSearchParams({
+          q: searchTerm,
+          country: "Uganda",
+          sort: "recent",
+          page: String(page),
+        });
+        const response = await fetch(
+          `https://himalayas.app/jobs/api/search?${query.toString()}`,
+          {
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+            signal: AbortSignal.timeout(15_000),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`Himalayas returned status ${response.status}.`);
+        }
+        const payload = HimalayasResponseSchema.parse(await response.json());
+        if (payload.jobs.length === 0) break;
+        for (const job of payload.jobs) {
+          const mappedJob = mapHimalayasJob(job);
+          if (mappedJob) jobs.push(mappedJob);
+        }
+        if (payload.jobs.length < 20) break;
+      }
+      return jobs;
+    }),
+  );
+
+  const jobs: RemoteJob[] = [];
+  const errors: string[] = [];
+  results.forEach((result, index) => {
+    if (result.status === "fulfilled") {
+      jobs.push(...result.value);
+      return;
+    }
+    const message =
+      result.reason instanceof Error ? result.reason.message : "Unknown error.";
+    errors.push(`Himalayas (${queries[index]}): ${message}`);
+  });
+  if (jobs.length === 0 && errors.length === queries.length) {
+    throw new Error(errors.join(" "));
+  }
+  return [...new Map(jobs.map((job) => [job.id, job])).values()];
+}
+
 export async function getJobSnapshot(forceRefresh = false): Promise<JobSnapshot> {
   const cacheKey = "__tech_roles__";
   const cached = snapshotCache.get(cacheKey);
@@ -392,10 +534,16 @@ export async function getJobSnapshot(forceRefresh = false): Promise<JobSnapshot>
   if (pending) return pending;
 
   const promise = (async () => {
-    const [remotiveResult, jobicyResult, remoteOkResult] = await Promise.allSettled([
+    const [
+      remotiveResult,
+      jobicyResult,
+      remoteOkResult,
+      himalayasResult,
+    ] = await Promise.allSettled([
       fetchRemotiveJobs(),
       fetchJobicyJobs(),
       fetchRemoteOkJobs(),
+      fetchHimalayasJobs(),
     ]);
     const jobs: RemoteJob[] = [];
     const updateDates: string[] = [];
@@ -435,6 +583,16 @@ export async function getJobSnapshot(forceRefresh = false): Promise<JobSnapshot>
           ? remoteOkResult.reason.message
           : "Unknown error.";
       sourceErrors.push(`Remote OK: ${message}`);
+    }
+
+    if (himalayasResult.status === "fulfilled") {
+      jobs.push(...himalayasResult.value);
+    } else {
+      const message =
+        himalayasResult.reason instanceof Error
+          ? himalayasResult.reason.message
+          : "Unknown error.";
+      sourceErrors.push(`Himalayas: ${message}`);
     }
 
     if (sourceErrors.length && jobs.length === 0) {

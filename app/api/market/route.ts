@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       fetchedAt: snapshot.fetchedAt,
       sourceUpdatedAt: snapshot.sourceUpdatedAt,
       sourceErrors: snapshot.sourceErrors,
-      sources: ["Remotive", "Jobicy", "Remote OK"],
+      sources: ["Remotive", "Jobicy", "Remote OK", "Himalayas"],
       searchMode: search
         ? "multi-source software and AI role relevance ranking"
         : "latest multi-source software and AI listings",

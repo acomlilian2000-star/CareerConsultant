@@ -35,6 +35,7 @@ type Job = {
   eligibilityLocation: string;
   salary: string;
   url: string;
+  sourceUrl: string;
   date: string;
   category: string;
   jobType: string;
@@ -444,7 +445,7 @@ export default function Home() {
                 <div><div className="eyebrow small"><span className="eyebrow-line" /> LIVE MARKET PULSE</div><h2>Fresh roles, real signals</h2></div>
                 <button className="icon-action" aria-label="Refresh listings from all job sources" onClick={() => void refreshJobs(marketSearch)} disabled={jobsLoading}>{jobsLoading ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={15} />}</button>
               </div>
-              <p className="market-desc">Search live software and AI engineering roles across Remotive, Jobicy, and Remote OK. Eligibility is not the employer&apos;s location.</p>
+              <p className="market-desc">Search live software and AI engineering roles across Remotive, Jobicy, Remote OK, and Himalayas, including roles open to applicants in Uganda. Eligibility is not the employer&apos;s location.</p>
               <form className="market-search" onSubmit={(event) => { event.preventDefault(); void refreshJobs(marketSearch); }}>
                 <input aria-label="Search remote job snapshot" placeholder="e.g. React developer, AI engineer, Python" value={marketSearch} onChange={(event) => setMarketSearch(event.target.value)} maxLength={80} />
                 <button type="submit" disabled={jobsLoading}>{jobsLoading ? "Searching…" : "Search roles"}</button>
@@ -456,7 +457,7 @@ export default function Home() {
                 {visibleJobs.length ? visibleJobs.map((job) => (
                   <article className="job-row" key={job.id}>
                     <span className="company-logo">{job.company.slice(0, 1).toUpperCase()}</span>
-                    <span className="job-copy"><b>{job.title}</b><small>{job.company} · Eligible: {job.eligibilityLocation || "Not provided"}</small></span>
+                    <span className="job-copy"><b>{job.title}</b><small>{job.company} · Eligible: {job.eligibilityLocation || "Not provided"}</small><small><a href={job.sourceUrl} target="_blank" rel="noreferrer">Source: {job.source}</a></small></span>
                     <span className="job-actions">
                       <button type="button" className="job-details-button" onClick={() => selectJob(job)}>{selectedJob?.id === job.id ? "Selected" : "Details & CV review"}</button>
                       <a className="job-salary" href={job.url} target="_blank" rel="noreferrer" aria-label={`Open ${job.title} at ${job.company}`}><ExternalLink size={14} /></a>
