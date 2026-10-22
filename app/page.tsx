@@ -363,7 +363,7 @@ export default function Home() {
           <button className="mobile-menu" aria-label="Toggle menu" onClick={() => setMobileMenu(!mobileMenu)}><Menu size={19} /></button>
           <div className="breadcrumb">Workspace <span>/</span> <b>{activeNav}</b></div>
           <div className="top-actions">
-            <span className={`live-pill ${marketError ? "offline" : ""}`}><span />{jobsLoading ? "Loading tech roles" : marketError ? "Job sources unavailable" : fetchedAt ? `${snapshotSize} software & AI listings` : "Job snapshot not loaded"}</span>
+            <span className={`live-pill ${marketError ? "offline" : ""}`}><span />{jobsLoading ? "Loading job snapshot" : marketError ? "Job snapshot unavailable" : fetchedAt ? `${snapshotSize} source snapshot listings` : "Job snapshot not loaded"}</span>
             <button className="help-button" aria-label="Help" title="Ask the career advisor" onClick={() => navigateTo("advisor", "Overview")}><CircleHelp size={18} /></button>
           </div>
         </header>
@@ -380,7 +380,7 @@ export default function Home() {
 
           <div className="stats-grid">
             <button className="stat-card stat-card-action" type="button" onClick={openMarketFeed} aria-label="View matching job listings">
-              <div className="stat-top"><span>SOFTWARE & AI ROLES</span><span className="stat-icon green"><BriefcaseBusiness size={16} /></span></div>
+              <div className="stat-top"><span>LIVE REMOTE LISTINGS</span><span className="stat-icon green"><BriefcaseBusiness size={16} /></span></div>
               <div className="stat-main">{jobsLoading ? "…" : fetchedAt ? totalJobCount : "—"}</div>
               <div className="stat-foot">{fetchedAt ? `${totalJobCount} roles matching “${marketSearch || "latest jobs"}”` : marketError ? "Source snapshot unavailable · click to retry" : "Waiting for current search results"}</div>
             </button>
@@ -401,13 +401,13 @@ export default function Home() {
             </button>
             {latestJob ? (
               <button className="stat-card stat-card-action" type="button" onClick={() => { setCategoryFilter(""); selectJob(latestJob); openMarketFeed(); }}>
-                <div className="stat-top"><span>LATEST TECH POSTING</span><span className="stat-icon peach"><Clock3 size={16} /></span></div>
+                <div className="stat-top"><span>LATEST POSTING DATE</span><span className="stat-icon peach"><Clock3 size={16} /></span></div>
                 <div className="stat-main stat-text">{latestJobDate?.toLocaleDateString()}</div>
-                <div className="stat-foot">{latestJobIsToday ? "Posted today" : "No newer software or AI role today"} · {latestJob.title} · {latestJob.source} · click to view</div>
+                <div className="stat-foot">{latestJobIsToday ? "New posting today" : "No new posting today"} · {latestJob.title} · click to view details</div>
               </button>
             ) : (
               <article className="stat-card">
-                <div className="stat-top"><span>LATEST TECH POSTING</span><span className="stat-icon peach"><Clock3 size={16} /></span></div>
+                <div className="stat-top"><span>LATEST POSTING DATE</span><span className="stat-icon peach"><Clock3 size={16} /></span></div>
                 <div className="stat-main stat-text">{jobsLoading ? "…" : "—"}</div>
                 <div className="stat-foot">{fetchedAt ? "No valid posting date in search results" : "Updates after live results load"}</div>
               </article>
@@ -429,12 +429,12 @@ export default function Home() {
           <div className="lower-grid">
             <section className="market-card" id="market-pulse">
               <div className="market-header">
-                <div><div className="eyebrow small"><span className="eyebrow-line" /> SOFTWARE & AI JOB FEED</div><h2>Fresh roles, real signals</h2></div>
+                <div><div className="eyebrow small"><span className="eyebrow-line" /> LIVE MARKET PULSE</div><h2>Fresh roles, real signals</h2></div>
                 <button className="icon-action" aria-label="Refresh listings from all job sources" onClick={() => void refreshJobs(marketSearch)} disabled={jobsLoading}>{jobsLoading ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={15} />}</button>
               </div>
-              <p className="market-desc">Software, AI, data, and engineering roles gathered from Remotive, Jobicy, and Remote OK. Results are ranked against your search; eligibility is not the employer&apos;s location.</p>
+              <p className="market-desc">Search live software and AI engineering roles across Remotive, Jobicy, and Remote OK. Eligibility is not the employer&apos;s location.</p>
               <form className="market-search" onSubmit={(event) => { event.preventDefault(); void refreshJobs(marketSearch); }}>
-                <input aria-label="Search software and AI roles" placeholder="e.g. React, Python, machine learning" value={marketSearch} onChange={(event) => setMarketSearch(event.target.value)} maxLength={80} />
+                <input aria-label="Search remote job snapshot" placeholder="e.g. React developer, AI engineer, Python" value={marketSearch} onChange={(event) => setMarketSearch(event.target.value)} maxLength={80} />
                 <button type="submit" disabled={jobsLoading}>{jobsLoading ? "Searching…" : "Search roles"}</button>
               </form>
               {marketError && <div className="inline-error">{marketError}</div>}
@@ -444,7 +444,7 @@ export default function Home() {
                 {visibleJobs.length ? visibleJobs.map((job) => (
                   <article className="job-row" key={job.id}>
                     <span className="company-logo">{job.company.slice(0, 1).toUpperCase()}</span>
-                    <span className="job-copy"><b>{job.title}</b><small>{job.company} · {job.source} · {job.date && Number.isFinite(Date.parse(job.date)) ? `Posted ${new Date(job.date).toLocaleDateString()} · ` : ""}Eligible: {job.eligibilityLocation || "Not provided"}</small></span>
+                    <span className="job-copy"><b>{job.title}</b><small>{job.company} · Eligible: {job.eligibilityLocation || "Not provided"}</small></span>
                     <span className="job-actions">
                       <button type="button" className="job-details-button" onClick={() => selectJob(job)}>{selectedJob?.id === job.id ? "Selected" : "Details & CV review"}</button>
                       <a className="job-salary" href={job.url} target="_blank" rel="noreferrer" aria-label={`Open ${job.title} at ${job.company}`}><ExternalLink size={14} /></a>

@@ -83,15 +83,15 @@ export type JobSnapshot = {
 
 const SNAPSHOT_TTL_MS = 15 * 60 * 1_000;
 const runtimeCache = globalThis as typeof globalThis & {
-  marketPulseJobSnapshots?: Map<string, JobSnapshot>;
-  marketPulseJobSnapshotPromises?: Map<string, Promise<JobSnapshot>>;
+  signalSpringJobSnapshots?: Map<string, JobSnapshot>;
+  signalSpringJobSnapshotPromises?: Map<string, Promise<JobSnapshot>>;
 };
 const snapshotCache =
-  runtimeCache.marketPulseJobSnapshots ??
-  (runtimeCache.marketPulseJobSnapshots = new Map<string, JobSnapshot>());
+  runtimeCache.signalSpringJobSnapshots ??
+  (runtimeCache.signalSpringJobSnapshots = new Map<string, JobSnapshot>());
 const snapshotPromises =
-  runtimeCache.marketPulseJobSnapshotPromises ??
-  (runtimeCache.marketPulseJobSnapshotPromises = new Map<string, Promise<JobSnapshot>>());
+  runtimeCache.signalSpringJobSnapshotPromises ??
+  (runtimeCache.signalSpringJobSnapshotPromises = new Map<string, Promise<JobSnapshot>>());
 
 function plainText(html: string): string {
   return html
@@ -104,7 +104,6 @@ function plainText(html: string): string {
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
     .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&hellip;/gi, "…")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/&hellip;/gi, "…")
@@ -245,6 +244,26 @@ function newestDate(dates: string[]): string {
     dates
       .filter((date) => Number.isFinite(Date.parse(date)))
       .sort((a, b) => Date.parse(b) - Date.parse(a))[0] ?? ""
+  );
+}
+
+const nonEngineeringRolePattern =
+  /\b(sales|marketing|account(?: executive| manager)|business development|customer success|customer support|recruit(?:er|ment)|growth|content|copywriter|brand)\b/i;
+const targetTechnologyPattern =
+  /\b(software|web|frontend|front[- ]end|backend|back[- ]end|full[- ]stack|mobile|ios|android|developer|devops|sre|site reliability|cloud|platform|infrastructure|cybersecurity|cyber security|security engineer|qa|quality assurance|tester|testing|data scientist|data engineer|data architect|machine learning|artificial intelligence|ai|llm|generative ai|nlp|natural language processing|computer vision|robotics|database|network|systems)\b/i;
+const engineeringTitlePattern =
+  /\b(engineer(?:ing)?|developer|programmer|scientist|research(?:er)?|architect|tester|qa|quality assurance|sre)\b/i;
+const aiDisciplinePattern =
+  /\b(ai|artificial intelligence|machine learning|ml|llm|generative ai|nlp|natural language processing|computer vision|robotics)\b/i;
+
+function isSoftwareOrAiEngineeringRole(job: RemoteJob): boolean {
+  if (nonEngineeringRolePattern.test(job.title)) return false;
+  const roleDetails = `${job.title} ${job.category} ${job.tags.join(" ")}`;
+  return (
+    targetTechnologyPattern.test(roleDetails) &&
+    engineeringTitlePattern.test(job.title) &&
+    (targetTechnologyPattern.test(job.title) ||
+      aiDisciplinePattern.test(roleDetails))
   );
 }
 
@@ -408,14 +427,19 @@ export function findRelevantJobs(
   jobs: RemoteJob[],
   query: string,
 ): RemoteJob[] {
-  const softwareAndAiRolePattern =
-    /\b(software|web|frontend|front[- ]end|backend|back[- ]end|full[- ]stack|mobile|ios|android|developer|development|devops|sre|site reliability|cloud engineer|platform engineer|infrastructure engineer|cybersecurity|cyber security|security engineer|qa|quality assurance|test engineer|testing|data scientist|data engineer|data architect|machine learning|artificial intelligence|ai|llm|generative ai|nlp|natural language processing|computer vision|robotics|database engineer|network engineer|systems engineer)\b/i;
-  const softwareAndAiJobs = jobs.filter((job) =>
-    softwareAndAiRolePattern.test(
-      `${job.title} ${job.category} ${job.tags.join(" ")}`,
-    ),
-  );
+  const softwareAndAiJobs = jobs.filter(isSoftwareOrAiEngineeringRole);
   const terms = searchTerms(query);
+  const excludedSearchTerms = new Set([
+    "sales",
+    "marketing",
+    "marketer",
+    "recruiter",
+    "recruitment",
+    "advertising",
+  ]);
+  if (terms.some((term) => excludedSearchTerms.has(term))) {
+    return [];
+  }
   if (!terms.length) {
     return [...softwareAndAiJobs].sort(newestFirst);
   }

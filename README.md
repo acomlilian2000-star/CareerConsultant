@@ -2,6 +2,8 @@
 
 SignalSpring is a Next.js career-advising app for software and AI engineering roles. It combines a cited career knowledge base, hybrid retrieval-augmented generation (RAG), OpenAI chat and embedding models, a learning-roadmap tool, and a responsive dashboard.
 
+The name pairs “signal”—clear evidence from hiring and skill trends—with “spring”—a fresh start and forward growth in a tech career.
+
 The job explorer combines public listings from Remotive, Jobicy, and Remote OK, focusing on software, AI, data-science, QA, and engineering roles rather than general sales or marketing jobs. The server caches the combined snapshot for up to 15 minutes; the refresh button bypasses that cache. Results are re-ranked against the full search. Counts and categories describe the current results, not every open role worldwide. Posting dates come from the sources and can lag the current day when providers have not published newer roles. The app does not display salary or housing benchmarks because a verified live regional data source is not connected.
 
 ## Run locally
