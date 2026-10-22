@@ -34,19 +34,19 @@ export const knowledgeBase: KnowledgeSource[] = [
   },
   {
     id: "jobicy",
-    title: "Remote software job listings",
-    publisher: "Jobicy public remote jobs API",
+    title: "Software and engineering job listings",
+    publisher: "Remotive, Jobicy, and Remote OK public job feeds",
     url: "https://jobicy.com/",
-    updated: "Live API; cached by search tag for up to 24 hours",
+    updated: "Live feeds; cached for up to 15 minutes",
     topics: ["jobs"],
     locations: ["remote"],
     text:
-      "MarketPulse queries Jobicy's public remote jobs API by role tag and ranks up to 50 returned listings; each role-tag result is cached server-side for up to 24 hours. Listings are remote-first and are not a representative sample of a particular city's entire job market. The API's job geography is candidate eligibility, not necessarily the employer's headquarters. Applicant counts and formal employment terms are not provided. Job titles, descriptions, and salary information may be incomplete or change after retrieval. Always check the original listing before applying.",
+      "The career app combines public remote listings from Remotive, Jobicy, and Remote OK, focusing on software, AI, QA, data-science, and engineering roles. The combined snapshot is cached server-side for up to 15 minutes, and a manual refresh bypasses that cache. Posting dates are supplied by the job boards and may be older than the current day when no newer role has been published. Listings are not a representative sample of a particular city's entire job market. Candidate eligibility is not necessarily the employer's location. Job titles, descriptions, and salary information may be incomplete or change after retrieval. Always check the original listing before applying.",
   },
   {
     id: "roadmap",
     title: "Entry-level learning tracks",
-    publisher: "MarketPulse curriculum guide",
+    publisher: "SignalSpring curriculum guide",
     url: "https://roadmap.sh/",
     updated: "Reviewed June 2025",
     topics: ["learning"],
@@ -57,7 +57,7 @@ export const knowledgeBase: KnowledgeSource[] = [
   {
     id: "portfolio",
     title: "Portfolio evidence for junior developers",
-    publisher: "MarketPulse curriculum guide",
+    publisher: "SignalSpring curriculum guide",
     url: "https://roadmap.sh/",
     updated: "Reviewed June 2025",
     topics: ["portfolio"],

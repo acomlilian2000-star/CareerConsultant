@@ -180,7 +180,7 @@ export async function POST(request: Request) {
       demoMode: !apiKey,
     });
   } catch (error) {
-    console.error("MarketPulse chat request failed:", error);
+    console.error("SignalSpring chat request failed:", error);
     return Response.json(
       {
         error:

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MarketPulse — Your career, mapped to the market",
+  title: "SignalSpring — Software and AI careers, in focus",
   description:
-    "A practical, market-aware career planner for early-career software developers.",
+    "A practical career planner and job explorer for software and AI engineers.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

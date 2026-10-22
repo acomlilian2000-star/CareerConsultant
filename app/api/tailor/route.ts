@@ -241,7 +241,7 @@ export async function POST(request: Request) {
     return Response.json({ feedback, jobTitle: job.title, company: job.company });
   } catch (error) {
     console.error(
-      "MarketPulse document review failed:",
+      "SignalSpring document review failed:",
       error instanceof Error ? error.message : "Unknown error",
     );
     return Response.json(

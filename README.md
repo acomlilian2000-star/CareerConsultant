@@ -1,8 +1,8 @@
-# MarketPulse: AI-Driven Tech Career Router
+# SignalSpring: Software & AI Career Guide
 
-MarketPulse is a Next.js career-advising app for early-career developers. It combines a cited career knowledge base, hybrid retrieval-augmented generation (RAG), OpenAI chat and embedding models, a learning-roadmap tool, and a responsive dashboard.
+SignalSpring is a Next.js career-advising app for software and AI engineering roles. It combines a cited career knowledge base, hybrid retrieval-augmented generation (RAG), OpenAI chat and embedding models, a learning-roadmap tool, and a responsive dashboard.
 
-MarketPulse searches public remote job listings from Jobicy by role tag, requests up to 50 matches, and caches each role-tag search in the server process for up to 24 hours. Results are re-ranked against the full search in the browser experience. Pulse counts and categories describe the current query results, not every open role worldwide. The app does not display salary or housing benchmarks because a verified live regional data source is not connected.
+The job explorer combines public listings from Remotive, Jobicy, and Remote OK, focusing on software, AI, data-science, QA, and engineering roles rather than general sales or marketing jobs. The server caches the combined snapshot for up to 15 minutes; the refresh button bypasses that cache. Results are re-ranked against the full search. Counts and categories describe the current results, not every open role worldwide. Posting dates come from the sources and can lag the current day when providers have not published newer roles. The app does not display salary or housing benchmarks because a verified live regional data source is not connected.
 
 ## Run locally
 
@@ -23,8 +23,8 @@ The model picker offers OpenAI's `gpt-4o-mini` and `gpt-4.1-mini` models.
 - **RAG:** a five-source career knowledge base is split into overlapping chunks with LangChain's `RecursiveCharacterTextSplitter`. A deterministic query-translation step expands career language into search terms and extracts topic/location metadata; those structured signals guide ranking alongside keyword overlap and, when configured, cosine similarity. Without embeddings, transparent keyword retrieval remains available. Responses show source links, retrieval mode, topic/location, and the translated search query.
 - **Tool calling:** a LangChain tool creates a staged 12-week learning plan. Tool results are rendered as cards.
 - **LLM integration:** LangChain `ChatOpenAI` uses OpenAI's API. The model can be selected in the UI. Without a key, the app returns an explicit, retrieval-grounded demo response.
-- **Source-backed job search:** query Jobicy's remote jobs API with the user's role tag and rank up to 50 returned results against the remaining search terms. Candidate eligibility is shown separately from employer location. Job details show the original description, source-provided salary/type/tags/date, and explicit “not provided” labels for absent fields. Applicant counts and formal contract terms are not provided by this API; verify all requirements with the linked employer listing.
-- **CV and cover-letter review:** select a listing and upload a PDF, DOCX, or TXT document (up to 5 MB each) for feedback against that source listing. At least one document is required; either or both can be uploaded. Text is extracted in memory and sent to OpenAI for the requested review. MarketPulse does not save uploaded files or extracted text. Do not upload information you do not want sent to OpenAI.
+- **Source-backed job search:** combine Remotive, Jobicy, and Remote OK listings; filter out non-software and non-engineering roles; rank against the remaining search terms; and keep each listing's source link and publication date. Candidate eligibility is shown separately from employer location. Job details show source-provided salary/type/tags/date, and explicit “not provided” labels for absent fields. Verify all requirements with the linked employer listing.
+- **CV and cover-letter review:** select a listing and upload a PDF, DOCX, or TXT document (up to 5 MB each) for feedback against that source listing. At least one document is required; either or both can be uploaded. Text is extracted in memory and sent to OpenAI for the requested review. SignalSpring does not save uploaded files or extracted text. Do not upload information you do not want sent to OpenAI.
 - **Safety:** server-only credentials, input size/schema validation, request throttling, prompt-injection pattern detection, explicit untrusted-context boundaries, and safe tool schemas. Avoid sending personal or sensitive information.
 - **Easy bonuses:** conversation history in local storage, source citations, and retrieval mode/warning visualization.
 - **Medium bonuses:** selectable chat models, search over cached job data, prompt-injection defenses, rough token/cost reporting when provider usage is returned, and tool-result visualizations.
@@ -39,7 +39,7 @@ Next.js dashboard
   │     ├── LangChain text splitting → hybrid retrieval
   │     ├── OpenAI ChatOpenAI → learning-roadmap tool call
   │     └── Answer + citations + retrieval/tool/usage metadata
-  ├── GET /api/market → Jobicy role-tag search + local relevance ranking
+  ├── GET /api/market → Remotive + Jobicy + Remote OK software and AI listings + local relevance ranking
   ├── POST /api/tailor → in-memory file extraction → OpenAI job-specific feedback
   └── POST /api/knowledge/refresh → rebuild chunks / warm embeddings
 ```

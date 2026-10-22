@@ -11,7 +11,7 @@ export async function POST() {
       message: "Knowledge chunks rebuilt and embedding index warmed when configured.",
     });
   } catch (error) {
-    console.error("MarketPulse knowledge refresh failed:", error);
+    console.error("SignalSpring knowledge refresh failed:", error);
     return Response.json(
       { error: error instanceof Error ? error.message : "Knowledge refresh failed." },
       { status: 502 },

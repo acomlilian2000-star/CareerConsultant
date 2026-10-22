@@ -88,6 +88,8 @@ const legacySuggestedQuestions = new Set([
   "Compare junior salary and rent in London",
   "What skills are growing in tech?",
 ]);
+const historyStorageKey = "signalspring-history";
+const legacyHistoryStorageKey = "marketpulse-history";
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -101,6 +103,7 @@ export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [jobsLoading, setJobsLoading] = useState(false);
   const [marketError, setMarketError] = useState("");
+  const [sourceErrors, setSourceErrors] = useState<string[]>([]);
   const [fetchedAt, setFetchedAt] = useState("");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
@@ -119,7 +122,10 @@ export default function Home() {
   }, [messages, loading]);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("marketpulse-history");
+    const storageKey = window.localStorage.getItem(historyStorageKey)
+      ? historyStorageKey
+      : legacyHistoryStorageKey;
+    const saved = window.localStorage.getItem(storageKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as Message[];
@@ -135,24 +141,29 @@ export default function Home() {
               legacySuggestedQuestions.has(previous.content.trim())
             );
           });
-          if (cleaned.length !== parsed.length) {
-            window.localStorage.setItem("marketpulse-history", JSON.stringify(cleaned.slice(-30)));
+          const history = cleaned.slice(-30);
+          if (cleaned.length !== parsed.length || storageKey !== historyStorageKey) {
+            window.localStorage.setItem(historyStorageKey, JSON.stringify(history));
           }
-          setMessages(cleaned.slice(-30));
+          if (storageKey !== historyStorageKey) {
+            window.localStorage.removeItem(legacyHistoryStorageKey);
+          }
+          setMessages(history);
         }
       } catch {
-        window.localStorage.removeItem("marketpulse-history");
+        window.localStorage.removeItem(storageKey);
       }
     }
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem("marketpulse-history", JSON.stringify(messages.slice(-30)));
+    window.localStorage.setItem(historyStorageKey, JSON.stringify(messages.slice(-30)));
   }, [messages]);
 
-  const refreshJobs = useCallback(async (search: string) => {
+  const refreshJobs = useCallback(async (search: string, forceRefresh = true) => {
     setJobsLoading(true);
     setMarketError("");
+    setSourceErrors([]);
     setCategoryFilter("");
     setSelectedJob(null);
     setCvFile(null);
@@ -164,12 +175,17 @@ export default function Home() {
     setSnapshotSize(0);
     setFetchedAt("");
     try {
-      const response = await fetch(`/api/market?search=${encodeURIComponent(search)}`);
+      const params = new URLSearchParams({ search });
+      if (forceRefresh) params.set("refresh", "1");
+      const response = await fetch(`/api/market?${params.toString()}`, {
+        cache: "no-store",
+      });
       const result = (await response.json()) as {
         jobs?: Job[];
         totalJobCount?: number;
         snapshotSize?: number;
         fetchedAt?: string;
+        sourceErrors?: string[];
         error?: string;
       };
       if (!response.ok) throw new Error(result.error || "Could not refresh jobs.");
@@ -177,6 +193,7 @@ export default function Home() {
       setTotalJobCount(result.totalJobCount ?? result.jobs?.length ?? 0);
       setSnapshotSize(result.snapshotSize ?? 0);
       setFetchedAt(result.fetchedAt ?? "");
+      setSourceErrors(result.sourceErrors ?? []);
     } catch (error) {
       setMarketError(error instanceof Error ? error.message : "Could not refresh jobs.");
     } finally {
@@ -185,7 +202,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    void refreshJobs("");
+    void refreshJobs("", false);
   }, [refreshJobs]);
 
   async function reviewDocuments(event: FormEvent) {
@@ -263,7 +280,8 @@ export default function Home() {
   function clearHistory() {
     setMessages([]);
     setShowHistory(false);
-    window.localStorage.removeItem("marketpulse-history");
+    window.localStorage.removeItem(historyStorageKey);
+    window.localStorage.removeItem(legacyHistoryStorageKey);
   }
 
   const totalMessages = useMemo(() => messages.length, [messages]);
@@ -282,6 +300,8 @@ export default function Home() {
     [jobs],
   );
   const latestJobDate = latestJob ? new Date(latestJob.date) : undefined;
+  const latestJobIsToday =
+    latestJobDate?.toDateString() === new Date().toDateString();
   const topCategoryCount = topCategory
     ? jobs.filter((job) => job.category === topCategory).length
     : 0;
@@ -314,9 +334,9 @@ export default function Home() {
   return (
     <main className="app-shell">
       <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
-        <a className="brand" href="#overview" aria-label="MarketPulse home" onClick={() => navigateTo("top", "Overview")}>
+        <a className="brand" href="#overview" aria-label="SignalSpring home" onClick={() => navigateTo("top", "Overview")}>
           <span className="brand-mark"><TrendingUp size={19} strokeWidth={2.5} /></span>
-          <span>market<span>pulse</span></span>
+          <span>signal<span>spring</span></span>
         </a>
         <div className="workspace-label">WORKSPACE</div>
         <button className={`nav-item ${activeNav === "Overview" ? "selected" : ""}`} onClick={() => navigateTo("top", "Overview")}><span className="nav-icon"><Command size={16} /></span> Overview</button>
@@ -343,7 +363,7 @@ export default function Home() {
           <button className="mobile-menu" aria-label="Toggle menu" onClick={() => setMobileMenu(!mobileMenu)}><Menu size={19} /></button>
           <div className="breadcrumb">Workspace <span>/</span> <b>{activeNav}</b></div>
           <div className="top-actions">
-            <span className={`live-pill ${marketError ? "offline" : ""}`}><span />{jobsLoading ? "Loading job snapshot" : marketError ? "Job snapshot unavailable" : fetchedAt ? `${snapshotSize} source snapshot listings` : "Job snapshot not loaded"}</span>
+            <span className={`live-pill ${marketError ? "offline" : ""}`}><span />{jobsLoading ? "Loading tech roles" : marketError ? "Job sources unavailable" : fetchedAt ? `${snapshotSize} software & AI listings` : "Job snapshot not loaded"}</span>
             <button className="help-button" aria-label="Help" title="Ask the career advisor" onClick={() => navigateTo("advisor", "Overview")}><CircleHelp size={18} /></button>
           </div>
         </header>
@@ -360,7 +380,7 @@ export default function Home() {
 
           <div className="stats-grid">
             <button className="stat-card stat-card-action" type="button" onClick={openMarketFeed} aria-label="View matching job listings">
-              <div className="stat-top"><span>LIVE REMOTE LISTINGS</span><span className="stat-icon green"><BriefcaseBusiness size={16} /></span></div>
+              <div className="stat-top"><span>SOFTWARE & AI ROLES</span><span className="stat-icon green"><BriefcaseBusiness size={16} /></span></div>
               <div className="stat-main">{jobsLoading ? "…" : fetchedAt ? totalJobCount : "—"}</div>
               <div className="stat-foot">{fetchedAt ? `${totalJobCount} roles matching “${marketSearch || "latest jobs"}”` : marketError ? "Source snapshot unavailable · click to retry" : "Waiting for current search results"}</div>
             </button>
@@ -381,13 +401,13 @@ export default function Home() {
             </button>
             {latestJob ? (
               <button className="stat-card stat-card-action" type="button" onClick={() => { setCategoryFilter(""); selectJob(latestJob); openMarketFeed(); }}>
-                <div className="stat-top"><span>LATEST POSTING DATE</span><span className="stat-icon peach"><Clock3 size={16} /></span></div>
+                <div className="stat-top"><span>LATEST TECH POSTING</span><span className="stat-icon peach"><Clock3 size={16} /></span></div>
                 <div className="stat-main stat-text">{latestJobDate?.toLocaleDateString()}</div>
-                <div className="stat-foot">{latestJob.title} · click to view details</div>
+                <div className="stat-foot">{latestJobIsToday ? "Posted today" : "No newer software or AI role today"} · {latestJob.title} · {latestJob.source} · click to view</div>
               </button>
             ) : (
               <article className="stat-card">
-                <div className="stat-top"><span>LATEST POSTING DATE</span><span className="stat-icon peach"><Clock3 size={16} /></span></div>
+                <div className="stat-top"><span>LATEST TECH POSTING</span><span className="stat-icon peach"><Clock3 size={16} /></span></div>
                 <div className="stat-main stat-text">{jobsLoading ? "…" : "—"}</div>
                 <div className="stat-foot">{fetchedAt ? "No valid posting date in search results" : "Updates after live results load"}</div>
               </article>
@@ -409,21 +429,22 @@ export default function Home() {
           <div className="lower-grid">
             <section className="market-card" id="market-pulse">
               <div className="market-header">
-                <div><div className="eyebrow small"><span className="eyebrow-line" /> LIVE MARKET PULSE</div><h2>Fresh roles, real signals</h2></div>
-                <button className="icon-action" aria-label="Reload cached job snapshot" onClick={() => void refreshJobs(marketSearch)} disabled={jobsLoading}>{jobsLoading ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={15} />}</button>
+                <div><div className="eyebrow small"><span className="eyebrow-line" /> SOFTWARE & AI JOB FEED</div><h2>Fresh roles, real signals</h2></div>
+                <button className="icon-action" aria-label="Refresh listings from all job sources" onClick={() => void refreshJobs(marketSearch)} disabled={jobsLoading}>{jobsLoading ? <LoaderCircle className="spin" size={16} /> : <RefreshCw size={15} />}</button>
               </div>
-              <p className="market-desc">Search real remote listings by role. Results are filtered using the role tag and ranked against your search. Eligibility is not the employer&apos;s location.</p>
+              <p className="market-desc">Software, AI, data, and engineering roles gathered from Remotive, Jobicy, and Remote OK. Results are ranked against your search; eligibility is not the employer&apos;s location.</p>
               <form className="market-search" onSubmit={(event) => { event.preventDefault(); void refreshJobs(marketSearch); }}>
-                <input aria-label="Search remote job snapshot" placeholder="e.g. React developer, data analyst, Python" value={marketSearch} onChange={(event) => setMarketSearch(event.target.value)} maxLength={80} />
+                <input aria-label="Search software and AI roles" placeholder="e.g. React, Python, machine learning" value={marketSearch} onChange={(event) => setMarketSearch(event.target.value)} maxLength={80} />
                 <button type="submit" disabled={jobsLoading}>{jobsLoading ? "Searching…" : "Search roles"}</button>
               </form>
               {marketError && <div className="inline-error">{marketError}</div>}
+              {sourceErrors.length > 0 && <div className="inline-error">Some sources could not be refreshed: {sourceErrors.join(" · ")}</div>}
               {categoryFilter && <div className="market-filter">Showing {categoryFilter} <button type="button" onClick={() => setCategoryFilter("")}>Clear filter</button></div>}
               <div className="job-list">
                 {visibleJobs.length ? visibleJobs.map((job) => (
                   <article className="job-row" key={job.id}>
                     <span className="company-logo">{job.company.slice(0, 1).toUpperCase()}</span>
-                    <span className="job-copy"><b>{job.title}</b><small>{job.company} · Eligible: {job.eligibilityLocation || "Not provided"}</small></span>
+                    <span className="job-copy"><b>{job.title}</b><small>{job.company} · {job.source} · {job.date && Number.isFinite(Date.parse(job.date)) ? `Posted ${new Date(job.date).toLocaleDateString()} · ` : ""}Eligible: {job.eligibilityLocation || "Not provided"}</small></span>
                     <span className="job-actions">
                       <button type="button" className="job-details-button" onClick={() => selectJob(job)}>{selectedJob?.id === job.id ? "Selected" : "Details & CV review"}</button>
                       <a className="job-salary" href={job.url} target="_blank" rel="noreferrer" aria-label={`Open ${job.title} at ${job.company}`}><ExternalLink size={14} /></a>
@@ -454,13 +475,13 @@ export default function Home() {
                   <p>Upload a CV, cover letter, or both. PDF, DOCX, and TXT files up to 5 MB each.</p>
                   <label>CV <input type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" onChange={(event) => { setCvFile(event.target.files?.[0] ?? null); setTailorFeedback(""); setTailorError(""); }} /></label>
                   <label>Cover letter <input type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" onChange={(event) => { setCoverLetterFile(event.target.files?.[0] ?? null); setTailorFeedback(""); setTailorError(""); }} /></label>
-                  <div className="document-privacy">Files are processed in memory for this request and are not saved by MarketPulse. Their text is sent to OpenAI for feedback.</div>
+                  <div className="document-privacy">Files are processed in memory for this request and are not saved by SignalSpring. Their text is sent to OpenAI for feedback.</div>
                   {tailorError && <div className="inline-error">{tailorError}</div>}
                   <button className="tailor-submit" type="submit" disabled={tailoring || (!cvFile && !coverLetterFile)}>{tailoring ? "Reviewing documents…" : "Review against this job"}</button>
                   {tailorFeedback && <div className="tailor-feedback"><h4>Feedback for {selectedJob.company}</h4><div>{tailorFeedback}</div></div>}
                 </form>
               </section>}
-              <div className="market-footer"><span>{fetchedAt ? <>Source: <a href="https://jobicy.com/" target="_blank" rel="noreferrer">Jobicy</a> · checked {new Date(fetchedAt).toLocaleString()}</> : <>Source: <a href="https://jobicy.com/" target="_blank" rel="noreferrer">Jobicy remote jobs API</a></>}</span><span>{fetchedAt ? `${jobs.length} of ${totalJobCount} matches` : "Loading job listings"}</span></div>
+              <div className="market-footer"><span>Sources: <a href="https://remotive.com/" target="_blank" rel="noreferrer">Remotive</a> · <a href="https://jobicy.com/" target="_blank" rel="noreferrer">Jobicy</a> · <a href="https://remoteok.com/" target="_blank" rel="noreferrer">Remote OK</a>{fetchedAt ? ` · checked ${new Date(fetchedAt).toLocaleString()}` : ""}</span><span>{fetchedAt ? `${jobs.length} of ${totalJobCount} matches` : "Loading job listings"}</span></div>
             </section>
 
             <section className="advisor-card" id="advisor">
@@ -501,8 +522,8 @@ export default function Home() {
             </section>
           </div>
 
-          <div className="disclaimer"><ShieldCheck size={13} /> Salary and housing benchmarks are not displayed because no verified live regional data source is connected. Job listings are sourced from Jobicy and may change; confirm details with the original posting.</div>
-          <footer><span>© {new Date().getFullYear()} MarketPulse</span><span><a href="https://www.weforum.org/publications/the-future-of-jobs-report-2025/" target="_blank" rel="noreferrer">Data sources</a><span className="footer-dot">·</span><button onClick={() => void refreshKnowledge()}>Knowledge base</button><span className="footer-dot">·</span><button onClick={() => setShowHistory(true)}>Conversation history</button></span></footer>
+          <div className="disclaimer"><ShieldCheck size={13} /> Salary and housing benchmarks are not displayed because no verified live regional data source is connected. Job listings come from Remotive, Jobicy, and Remote OK and may change; confirm details with the original posting.</div>
+          <footer><span>© {new Date().getFullYear()} SignalSpring</span><span><a href="https://www.weforum.org/publications/the-future-of-jobs-report-2025/" target="_blank" rel="noreferrer">Data sources</a><span className="footer-dot">·</span><button onClick={() => void refreshKnowledge()}>Knowledge base</button><span className="footer-dot">·</span><button onClick={() => setShowHistory(true)}>Conversation history</button></span></footer>
         </div>
       </section>
 
